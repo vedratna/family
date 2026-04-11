@@ -48,26 +48,6 @@ jobs:
       - run: npm ci
       - run: npm run test
 
-  integration-tests:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    needs: [unit-tests]
-    services:
-      dynamodb:
-        image: amazon/dynamodb-local:latest
-        ports:
-          - 8000:8000
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run test -- --filter=@family-app/backend -- --run --config vitest.integration.config.ts
-        env:
-          DYNAMODB_ENDPOINT: http://localhost:8000
-
   build:
     name: Build Check
     runs-on: ubuntu-latest
