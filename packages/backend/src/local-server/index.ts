@@ -2,9 +2,7 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 
 import { ApolloServer } from "@apollo/server";
-// @ts-expect-error Apollo Server express4 subpath export types
-import { expressMiddleware } from "@apollo/server/express4";
-import express from "express";
+import { startStandaloneServer } from "@apollo/server/standalone";
 
 import { DynamoUserRepository } from "../repositories/dynamodb/user-repo";
 import { RegisterWithPhone } from "../use-cases/auth";
@@ -16,6 +14,25 @@ const typeDefs = readFileSync(resolve(__dirname, "../../../infra/graphql/schema.
 
 // Instantiate repositories (using DynamoDB Local)
 const userRepo = new DynamoUserRepository();
+
+// Stub objects matching the GraphQL schema types
+const stubUser = {
+  id: "stub",
+  phone: "",
+  displayName: "Stub",
+  profilePhotoKey: null,
+  dateOfBirth: null,
+  createdAt: new Date().toISOString(),
+};
+
+const stubPerson = {
+  id: "stub",
+  familyId: "stub",
+  userId: null,
+  name: "Stub",
+  profilePhotoKey: null,
+  createdAt: new Date().toISOString(),
+};
 
 // Resolvers call the same use cases as Lambda handlers
 const resolvers = {
@@ -37,12 +54,29 @@ const resolvers = {
       });
       return result.user;
     },
-    ping: (_: unknown, args: { message: string }) => `pong: ${args.message}`,
-    updateProfile: () => null,
-    createFamily: () => null,
-    inviteMember: () => null,
-    acceptInvitation: () => null,
-    addNonAppPerson: () => null,
+    updateProfile: () => stubUser,
+    createFamily: () => ({
+      family: {
+        id: "stub",
+        name: "Stub",
+        themeName: "teal",
+        createdBy: "stub",
+        createdAt: new Date().toISOString(),
+      },
+      person: stubPerson,
+    }),
+    inviteMember: () => ({
+      familyId: "stub",
+      phone: "",
+      invitedBy: "stub",
+      relationshipToInviter: "",
+      inverseRelationshipLabel: "",
+      role: "member",
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    }),
+    acceptInvitation: () => ({ person: stubPerson, role: "member" }),
+    addNonAppPerson: () => stubPerson,
     updateMemberRole: () => false,
     transferOwnership: () => false,
     removeMember: () => false,
@@ -51,28 +85,17 @@ const resolvers = {
 };
 
 async function start(): Promise<void> {
-  const app = express();
   const server = new ApolloServer({ typeDefs, resolvers });
 
-  await server.start();
-
-  app.use(
-    "/graphql",
-    express.json(),
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    expressMiddleware(server, {
-      context: ({ req }: { req: express.Request }) => {
-        // Local auth bypass: use x-user-id header for testing
-        const userId = req.headers["x-user-id"] as string | undefined;
-        return Promise.resolve({ userId: userId ?? "local-dev-user" });
-      },
-    }) as express.RequestHandler,
-  );
-
-  app.listen(PORT, () => {
-    console.log(`Local GraphQL API running at http://localhost:${String(PORT)}/graphql`);
-    console.log(`GraphQL Playground available at http://localhost:${String(PORT)}/graphql`);
+  const { url } = await startStandaloneServer(server, {
+    listen: { port: PORT },
+    context: ({ req }) => {
+      const userId = req.headers["x-user-id"] as string | undefined;
+      return Promise.resolve({ userId: userId ?? "local-dev-user" });
+    },
   });
+
+  console.log(`Local GraphQL API running at ${url}`);
 }
 
 start().catch(console.error);
