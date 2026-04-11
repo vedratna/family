@@ -44,31 +44,36 @@ export class AuthStack extends cdk.Stack {
       removalPolicy: props.stage === "prod" ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
-    // Google identity provider
-    new cognito.UserPoolIdentityProviderGoogle(this, "GoogleProvider", {
-      userPool: this.userPool,
-      clientId: cdk.Fn.ref("GoogleClientId"),
-      clientSecretValue: cdk.SecretValue.ssmSecure(`/family/${props.stage}/google-client-secret`),
-      scopes: ["openid", "profile", "email"],
-      attributeMapping: {
-        fullname: cognito.ProviderAttribute.GOOGLE_NAME,
-        email: cognito.ProviderAttribute.GOOGLE_EMAIL,
-      },
-    });
+    // Social identity providers — only added when credentials are configured
+    const googleClientId = String(this.node.tryGetContext("googleClientId") ?? "");
+    if (googleClientId !== "") {
+      new cognito.UserPoolIdentityProviderGoogle(this, "GoogleProvider", {
+        userPool: this.userPool,
+        clientId: googleClientId,
+        clientSecretValue: cdk.SecretValue.ssmSecure(`/family/${props.stage}/google-client-secret`),
+        scopes: ["openid", "profile", "email"],
+        attributeMapping: {
+          fullname: cognito.ProviderAttribute.GOOGLE_NAME,
+          email: cognito.ProviderAttribute.GOOGLE_EMAIL,
+        },
+      });
+    }
 
-    // Apple identity provider
-    new cognito.UserPoolIdentityProviderApple(this, "AppleProvider", {
-      userPool: this.userPool,
-      clientId: cdk.Fn.ref("AppleClientId"),
-      teamId: cdk.Fn.ref("AppleTeamId"),
-      keyId: cdk.Fn.ref("AppleKeyId"),
-      privateKey: cdk.Fn.ref("ApplePrivateKey"),
-      scopes: ["name", "email"],
-      attributeMapping: {
-        fullname: cognito.ProviderAttribute.APPLE_NAME,
-        email: cognito.ProviderAttribute.APPLE_EMAIL,
-      },
-    });
+    const appleClientId = String(this.node.tryGetContext("appleClientId") ?? "");
+    if (appleClientId !== "") {
+      new cognito.UserPoolIdentityProviderApple(this, "AppleProvider", {
+        userPool: this.userPool,
+        clientId: appleClientId,
+        teamId: String(this.node.tryGetContext("appleTeamId") ?? ""),
+        keyId: String(this.node.tryGetContext("appleKeyId") ?? ""),
+        privateKey: String(this.node.tryGetContext("applePrivateKey") ?? ""),
+        scopes: ["name", "email"],
+        attributeMapping: {
+          fullname: cognito.ProviderAttribute.APPLE_NAME,
+          email: cognito.ProviderAttribute.APPLE_EMAIL,
+        },
+      });
+    }
 
     this.userPoolClient = this.userPool.addClient("FamilyAppClient", {
       userPoolClientName: `family-${props.stage}-app-client`,
