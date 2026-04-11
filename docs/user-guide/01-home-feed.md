@@ -26,6 +26,7 @@ The feed shows a timeline of posts from your family members, newest first. Betwe
 ## Creating Posts
 
 Tap the post composer at the top of the feed. You can:
+
 - Write **text** updates
 - Attach **photos** from your gallery or camera
 - Attach **videos** (MP4, MOV — up to 500MB)
@@ -50,6 +51,7 @@ Tap the **Share** button on any post to open your phone's native share sheet. Fr
 ## Activation Gate
 
 **If you just created your family and no one has joined yet**, posting is temporarily locked. This is by design — your first posts should have an audience! While waiting, you can:
+
 - Add events to the calendar
 - Add family members to the tree
 - Resend invites

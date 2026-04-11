@@ -21,9 +21,7 @@ export function TreeNodeCard({
     ? theme.colors.background.card
     : theme.colors.background.tertiary;
 
-  const borderColor = isHighlighted
-    ? theme.colors.accent.primary
-    : theme.colors.border.primary;
+  const borderColor = isHighlighted ? theme.colors.accent.primary : theme.colors.border.primary;
 
   return (
     <Pressable
@@ -45,9 +43,7 @@ export function TreeNodeCard({
           style={[
             styles.avatarText,
             {
-              color: hasAppAccount
-                ? theme.colors.accent.primary
-                : theme.colors.text.tertiary,
+              color: hasAppAccount ? theme.colors.accent.primary : theme.colors.text.tertiary,
             },
           ]}
         >
@@ -58,9 +54,7 @@ export function TreeNodeCard({
         style={[
           styles.name,
           {
-            color: hasAppAccount
-              ? theme.colors.text.primary
-              : theme.colors.text.tertiary,
+            color: hasAppAccount ? theme.colors.text.primary : theme.colors.text.tertiary,
           },
         ]}
         numberOfLines={1}

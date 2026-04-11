@@ -12,7 +12,12 @@ interface PushNotificationInput {
 }
 
 export interface IPushNotificationSender {
-  send(deviceToken: string, platform: "ios" | "android", title: string, body: string): Promise<void>;
+  send(
+    deviceToken: string,
+    platform: "ios" | "android",
+    title: string,
+    body: string,
+  ): Promise<void>;
 }
 
 export class SendPushNotification {
@@ -28,7 +33,8 @@ export class SendPushNotification {
     const categoryPref = prefs.find((p) => p.category === input.category);
 
     // If preference not set, check defaults (events-reminders and comments-on-own are ON)
-    const defaultEnabled = input.category === "events-reminders" || input.category === "social-comments-on-own";
+    const defaultEnabled =
+      input.category === "events-reminders" || input.category === "social-comments-on-own";
     const isEnabled = categoryPref !== undefined ? categoryPref.enabled : defaultEnabled;
 
     if (!isEnabled) {

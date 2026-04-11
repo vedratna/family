@@ -7,6 +7,7 @@ Three documentation sets target three distinct audiences: developers building th
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Provide a new developer with everything they need to understand the system in under 1 hour
 - Codify quality standards so they are enforceable, not just aspirational
 - Give end users a self-service guide that reduces support burden
@@ -14,6 +15,7 @@ Three documentation sets target three distinct audiences: developers building th
 - Use visual diagrams (ASCII art in markdown) throughout — a good diagram replaces paragraphs
 
 **Non-Goals:**
+
 - API reference docs (auto-generate from GraphQL schema later)
 - Inline code comments or JSDoc (code should be self-documenting)
 - Deployment runbooks (separate ops concern)
@@ -52,8 +54,9 @@ Three documentation sets target three distinct audiences: developers building th
 **Rationale:** ASCII diagrams live in the same git repo as the code, can be diffed in PRs, need no external tools to view, and render everywhere (GitHub, IDE, terminal). They are maintained by the same developers who maintain the code.
 
 **Alternatives considered:**
-- *Mermaid*: Renderable in GitHub markdown, but not in all tools (IDEs, terminals). ASCII is more universal.
-- *Image files (PNG/SVG)*: Not diffable, need separate tools to edit, go stale quickly.
+
+- _Mermaid_: Renderable in GitHub markdown, but not in all tools (IDEs, terminals). ASCII is more universal.
+- _Image files (PNG/SVG)_: Not diffable, need separate tools to edit, go stale quickly.
 
 ### 6. Cross-References Between Documents
 

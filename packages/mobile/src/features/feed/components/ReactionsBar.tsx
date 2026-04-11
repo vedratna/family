@@ -2,7 +2,14 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 
 import { useTheme } from "../../../shared/theme";
 
-const QUICK_REACTIONS = ["\u2764\uFE0F", "\uD83D\uDC4D", "\uD83D\uDE02", "\uD83D\uDE0D", "\uD83D\uDE22", "\uD83D\uDE4F"];
+const QUICK_REACTIONS = [
+  "\u2764\uFE0F",
+  "\uD83D\uDC4D",
+  "\uD83D\uDE02",
+  "\uD83D\uDE0D",
+  "\uD83D\uDE22",
+  "\uD83D\uDE4F",
+];
 
 interface ReactionSummary {
   emoji: string;
@@ -16,7 +23,11 @@ interface ReactionsBarProps {
   showPicker?: boolean;
 }
 
-export function ReactionsBar({ reactions, onToggleReaction, showPicker = false }: ReactionsBarProps) {
+export function ReactionsBar({
+  reactions,
+  onToggleReaction,
+  showPicker = false,
+}: ReactionsBarProps) {
   const theme = useTheme();
 
   return (
@@ -30,9 +41,7 @@ export function ReactionsBar({ reactions, onToggleReaction, showPicker = false }
               backgroundColor: reaction.isOwnReaction
                 ? theme.colors.accent.light
                 : theme.colors.background.secondary,
-              borderColor: reaction.isOwnReaction
-                ? theme.colors.accent.primary
-                : "transparent",
+              borderColor: reaction.isOwnReaction ? theme.colors.accent.primary : "transparent",
             },
           ]}
           onPress={() => {
@@ -44,7 +53,11 @@ export function ReactionsBar({ reactions, onToggleReaction, showPicker = false }
           <Text
             style={[
               styles.count,
-              { color: reaction.isOwnReaction ? theme.colors.accent.primary : theme.colors.text.secondary },
+              {
+                color: reaction.isOwnReaction
+                  ? theme.colors.accent.primary
+                  : theme.colors.text.secondary,
+              },
             ]}
           >
             {String(reaction.count)}

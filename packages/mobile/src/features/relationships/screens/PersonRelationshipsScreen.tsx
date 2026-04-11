@@ -35,12 +35,8 @@ export function PersonRelationshipsScreen({
             <Text style={[styles.otherName, { color: theme.colors.text.primary }]}>
               {item.otherPersonName}
             </Text>
-            <Text style={[styles.label, { color: theme.colors.accent.primary }]}>
-              {item.label}
-            </Text>
-            <Text style={[styles.type, { color: theme.colors.text.tertiary }]}>
-              {item.type}
-            </Text>
+            <Text style={[styles.label, { color: theme.colors.accent.primary }]}>{item.label}</Text>
+            <Text style={[styles.type, { color: theme.colors.text.tertiary }]}>{item.type}</Text>
           </View>
         )}
         ListEmptyComponent={

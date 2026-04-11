@@ -34,9 +34,7 @@ export class InferRelationships {
     const confirmed = allRelationships.filter((r) => r.status === "confirmed");
 
     const suggestions: InferredSuggestion[] = [];
-    const existingPairs = new Set(
-      allRelationships.map((r) => pairKey(r.personAId, r.personBId)),
-    );
+    const existingPairs = new Set(allRelationships.map((r) => pairKey(r.personAId, r.personBId)));
 
     // Build adjacency for traversal
     const graph = buildGraph(confirmed);
@@ -135,7 +133,10 @@ export class InferRelationships {
     const personB = rel.personBId;
 
     // Parent-in-law: spouse's parents become in-laws
-    for (const [spouse, other] of [[personA, personB], [personB, personA]] as const) {
+    for (const [spouse, other] of [
+      [personA, personB],
+      [personB, personA],
+    ] as const) {
       const spouseParents = getRelatedByType(graph, spouse, "parent-child", "child");
       for (const parentInLawId of spouseParents) {
         if (!existing.has(pairKey(parentInLawId, other))) {
@@ -190,7 +191,11 @@ function buildGraph(relationships: Relationship[]): RelationshipGraph {
   for (const rel of relationships) {
     if (rel.type === "parent-child") {
       // personA is parent, personB is child
-      addEdge(rel.personAId, { otherPersonId: rel.personBId, type: "parent-child", role: "parent" });
+      addEdge(rel.personAId, {
+        otherPersonId: rel.personBId,
+        type: "parent-child",
+        role: "parent",
+      });
       addEdge(rel.personBId, { otherPersonId: rel.personAId, type: "parent-child", role: "child" });
     } else if (rel.type === "sibling") {
       addEdge(rel.personAId, { otherPersonId: rel.personBId, type: "sibling", role: "either" });

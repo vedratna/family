@@ -19,7 +19,9 @@ function AppContent() {
 
   return (
     <ThemeProvider value={theme}>
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: theme.colors.background.primary }]}
+      >
         <AppHeader
           familyName={activeFamily?.name ?? "FamilyApp"}
           showInviteButton={memberCount < 2}
@@ -32,7 +34,9 @@ function AppContent() {
               switchFamily(nextFamily.id);
             }
           }}
-          onNotifications={() => { setActiveTab("more"); }}
+          onNotifications={() => {
+            setActiveTab("more");
+          }}
           onInvite={() => {}}
         />
 

@@ -28,9 +28,7 @@ export function MembersListScreen({
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
-      <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-        {familyName} Members
-      </Text>
+      <Text style={[styles.title, { color: theme.colors.text.primary }]}>{familyName} Members</Text>
 
       <FlatList
         data={members}

@@ -8,10 +8,7 @@ import { BuildFamilyTree, serializeTree, type SerializedTree } from "./build-fam
 export class CachedFamilyTree {
   private readonly buildTree: BuildFamilyTree;
 
-  constructor(
-    personRepo: IPersonRepository,
-    relationshipRepo: IRelationshipRepository,
-  ) {
+  constructor(personRepo: IPersonRepository, relationshipRepo: IRelationshipRepository) {
     this.buildTree = new BuildFamilyTree(personRepo, relationshipRepo);
   }
 

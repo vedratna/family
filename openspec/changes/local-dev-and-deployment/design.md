@@ -5,6 +5,7 @@ The family-app has a complete codebase but no way to run it. Developers need to 
 ## Goals / Non-Goals
 
 **Goals:**
+
 - A developer can see the full app on their phone within 5 minutes of cloning the repo
 - Business logic can be tested end-to-end locally without an AWS account
 - Code follows a proper PR flow with CI validation before merge
@@ -12,6 +13,7 @@ The family-app has a complete codebase but no way to run it. Developers need to 
 - Every required credential is documented with setup instructions
 
 **Non-Goals:**
+
 - Production-grade monitoring/alerting (separate concern)
 - Custom domain setup for AppSync (later)
 - App Store/Play Store submission automation (manual for v1)
@@ -49,9 +51,10 @@ function useFeed() {
 **Rationale:** This gives full backend parity locally — the same business logic (permission checks, activation gate, inference engine) runs against a real database. Apollo Server serves the same `schema.graphql` file used by AppSync, ensuring schema consistency.
 
 **Alternatives considered:**
-- *Serverless Offline*: Emulates Lambda + API Gateway but doesn't support AppSync well. Rejected.
-- *AWS SAM Local*: Good for Lambda but heavy for development iteration. Rejected for speed.
-- *Direct use-case testing*: Already covered by unit tests. Local API adds end-to-end HTTP testing.
+
+- _Serverless Offline_: Emulates Lambda + API Gateway but doesn't support AppSync well. Rejected.
+- _AWS SAM Local_: Good for Lambda but heavy for development iteration. Rejected for speed.
+- _Direct use-case testing_: Already covered by unit tests. Local API adds end-to-end HTTP testing.
 
 ### 3. Dev Scripts — Concurrently for Parallel Processes
 
@@ -75,11 +78,11 @@ npm run dev
 
 **Decision:** Use Expo Application Services (EAS) for mobile builds with three profiles:
 
-| Profile | Use | Distribution |
-|---------|-----|-------------|
-| `development` | Local development with dev client | Internal |
-| `preview` | QA testing | Internal (TestFlight / internal track) |
-| `production` | App store release | App Store / Google Play |
+| Profile       | Use                               | Distribution                           |
+| ------------- | --------------------------------- | -------------------------------------- |
+| `development` | Local development with dev client | Internal                               |
+| `preview`     | QA testing                        | Internal (TestFlight / internal track) |
+| `production`  | App store release                 | App Store / Google Play                |
 
 **Rationale:** EAS handles native builds in the cloud — no Xcode/Android Studio needed locally. Build profiles map cleanly to environments.
 
@@ -87,11 +90,11 @@ npm run dev
 
 **Decision:** Credentials are stored in different locations depending on their scope:
 
-| Scope | Storage | Accessed By |
-|-------|---------|-------------|
-| CI/CD (AWS deploy, Expo) | GitHub Repository Secrets | GitHub Actions |
+| Scope                                  | Storage                                | Accessed By                           |
+| -------------------------------------- | -------------------------------------- | ------------------------------------- |
+| CI/CD (AWS deploy, Expo)               | GitHub Repository Secrets              | GitHub Actions                        |
 | Runtime (Google/Apple OAuth, APNs/FCM) | AWS SSM Parameter Store (SecureString) | CDK at deploy time, Lambda at runtime |
-| Local development | `.env.local` (gitignored) | Developer's machine only |
+| Local development                      | `.env.local` (gitignored)              | Developer's machine only              |
 
 ### 7. Initial PR Strategy — Layered PRs
 

@@ -85,11 +85,13 @@ Every API input has a Zod schema defined once in `shared/validation/`. Both the 
 ## How Packages Consume Shared
 
 **Backend** — imports types for use case signatures and repository interfaces:
+
 ```typescript
 import type { User, UserProfile } from "@family-app/shared";
 ```
 
 **Mobile** — imports types for API response typing and Zod schemas for form validation:
+
 ```typescript
 import { CreateFamilyInput, type ThemeName } from "@family-app/shared";
 ```

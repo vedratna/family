@@ -19,11 +19,7 @@ interface InviteMembersScreenProps {
   onSkip: () => void;
 }
 
-export function InviteMembersScreen({
-  familyName,
-  onSubmit,
-  onSkip,
-}: InviteMembersScreenProps) {
+export function InviteMembersScreen({ familyName, onSubmit, onSkip }: InviteMembersScreenProps) {
   const theme = useTheme();
   const [entries, setEntries] = useState([emptyEntry(), emptyEntry()]);
 
@@ -63,29 +59,50 @@ export function InviteMembersScreen({
       {entries.map((entry, index) => (
         <View
           key={index}
-          style={[styles.entryCard, { backgroundColor: theme.colors.background.card, borderColor: theme.colors.border.secondary }]}
+          style={[
+            styles.entryCard,
+            {
+              backgroundColor: theme.colors.background.card,
+              borderColor: theme.colors.border.secondary,
+            },
+          ]}
         >
           <TextInput
-            style={[styles.input, { color: theme.colors.text.primary, borderColor: theme.colors.border.primary }]}
+            style={[
+              styles.input,
+              { color: theme.colors.text.primary, borderColor: theme.colors.border.primary },
+            ]}
             value={entry.name}
-            onChangeText={(v) => { updateEntry(index, "name", v); }}
+            onChangeText={(v) => {
+              updateEntry(index, "name", v);
+            }}
             placeholder="Name"
             placeholderTextColor={theme.colors.text.tertiary}
             testID={`invite-name-${String(index)}`}
           />
           <TextInput
-            style={[styles.input, { color: theme.colors.text.primary, borderColor: theme.colors.border.primary }]}
+            style={[
+              styles.input,
+              { color: theme.colors.text.primary, borderColor: theme.colors.border.primary },
+            ]}
             value={entry.phone}
-            onChangeText={(v) => { updateEntry(index, "phone", v); }}
+            onChangeText={(v) => {
+              updateEntry(index, "phone", v);
+            }}
             placeholder="Phone number"
             placeholderTextColor={theme.colors.text.tertiary}
             keyboardType="phone-pad"
             testID={`invite-phone-${String(index)}`}
           />
           <TextInput
-            style={[styles.input, { color: theme.colors.text.primary, borderColor: theme.colors.border.primary }]}
+            style={[
+              styles.input,
+              { color: theme.colors.text.primary, borderColor: theme.colors.border.primary },
+            ]}
             value={entry.relationship}
-            onChangeText={(v) => { updateEntry(index, "relationship", v); }}
+            onChangeText={(v) => {
+              updateEntry(index, "relationship", v);
+            }}
             placeholder="They are your..."
             placeholderTextColor={theme.colors.text.tertiary}
             testID={`invite-relationship-${String(index)}`}

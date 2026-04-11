@@ -55,6 +55,13 @@ export const darkColors = {
 export interface BaseColors {
   background: { primary: string; card: string; secondary: string; tertiary: string };
   text: { primary: string; secondary: string; tertiary: string; inverse: string };
-  semantic: { error: string; warning: string; success: string; errorLight: string; warningLight: string; successLight: string };
+  semantic: {
+    error: string;
+    warning: string;
+    success: string;
+    errorLight: string;
+    warningLight: string;
+    successLight: string;
+  };
   border: { primary: string; secondary: string };
 }

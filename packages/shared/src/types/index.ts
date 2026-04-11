@@ -3,28 +3,14 @@ export type { Role } from "./roles";
 export { ROLES } from "./roles";
 export type { ThemeName } from "./theme";
 export { THEME_NAMES, DEFAULT_THEME_NAME } from "./theme";
-export type {
-  Family,
-  Person,
-  FamilyMembership,
-  Invitation,
-  InvitationStatus,
-} from "./family";
-export type {
-  Relationship,
-  RelationshipType,
-  RelationshipStatus,
-} from "./relationship";
+export type { Family, Person, FamilyMembership, Invitation, InvitationStatus } from "./family";
+export type { Relationship, RelationshipType, RelationshipStatus } from "./relationship";
 export { RELATIONSHIP_TYPES } from "./relationship";
 export type { Post, PostMedia, Comment, Reaction } from "./post";
 export type { FamilyEvent, EventRSVP, EventType, RSVPStatus } from "./event";
 export { EVENT_TYPES } from "./event";
 export type { Chore, ChoreStatus } from "./chore";
-export type {
-  NotificationPreference,
-  NotificationCategory,
-  DeviceToken,
-} from "./notification";
+export type { NotificationPreference, NotificationCategory, DeviceToken } from "./notification";
 export { NOTIFICATION_CATEGORIES } from "./notification";
 export type { Media, MediaType } from "./media";
 export { ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES, ALLOWED_MEDIA_TYPES } from "./media";

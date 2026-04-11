@@ -55,6 +55,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32 },
   title: { fontSize: 20, fontWeight: "600", marginBottom: 8, color: "#1A1A1A" },
   message: { fontSize: 14, color: "#6B6966", textAlign: "center", marginBottom: 24 },
-  button: { backgroundColor: "#2B8A7E", borderRadius: 10, paddingVertical: 12, paddingHorizontal: 24 },
+  button: {
+    backgroundColor: "#2B8A7E",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
   buttonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
 });

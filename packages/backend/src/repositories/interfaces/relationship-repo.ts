@@ -4,7 +4,11 @@ export interface IRelationshipRepository {
   create(relationship: Relationship): Promise<void>;
   getByFamily(familyId: string): Promise<Relationship[]>;
   getByPerson(familyId: string, personId: string): Promise<Relationship[]>;
-  getById(familyId: string, personAId: string, personBId: string): Promise<Relationship | undefined>;
+  getById(
+    familyId: string,
+    personAId: string,
+    personBId: string,
+  ): Promise<Relationship | undefined>;
   update(
     familyId: string,
     personAId: string,

@@ -23,7 +23,9 @@ export class GenerateUploadUrl {
 
   async execute(input: GenerateUploadUrlInput): Promise<GenerateUploadUrlResult> {
     if (!ALLOWED_MEDIA_TYPES.includes(input.contentType as MediaType)) {
-      throw new ValidationError(`Unsupported file type: ${input.contentType}. Allowed: ${ALLOWED_MEDIA_TYPES.join(", ")}`);
+      throw new ValidationError(
+        `Unsupported file type: ${input.contentType}. Allowed: ${ALLOWED_MEDIA_TYPES.join(", ")}`,
+      );
     }
 
     if (input.sizeBytes > MAX_FILE_SIZE) {

@@ -10,14 +10,14 @@ This document is the quality constitution for the family-app project. Every rule
 
 Every package uses `strict: true` plus additional flags. Here's what each flag catches:
 
-| Flag | What It Catches | Why |
-|------|----------------|-----|
-| `strict: true` | Enables all strict checks (strictNullChecks, strictFunctionTypes, etc.) | Foundation of type safety |
-| `noUncheckedIndexedAccess` | Array/object access returns `T \| undefined`, forcing you to handle missing values | Critical for DynamoDB results where items may not exist |
-| `noImplicitReturns` | Functions with branches must explicitly return in all paths | Prevents accidentally returning `undefined` |
-| `noFallthroughCasesInSwitch` | Switch cases must break or return | Prevents accidental fallthrough bugs |
-| `forceConsistentCasingInFileNames` | `import "./File"` must match actual filename casing | Prevents cross-platform bugs (macOS is case-insensitive, Linux isn't) |
-| `exactOptionalPropertyTypes` | `prop?: string` means the property is absent, NOT `string \| undefined` | Prevents assigning `undefined` to optional properties |
+| Flag                               | What It Catches                                                                    | Why                                                                   |
+| ---------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `strict: true`                     | Enables all strict checks (strictNullChecks, strictFunctionTypes, etc.)            | Foundation of type safety                                             |
+| `noUncheckedIndexedAccess`         | Array/object access returns `T \| undefined`, forcing you to handle missing values | Critical for DynamoDB results where items may not exist               |
+| `noImplicitReturns`                | Functions with branches must explicitly return in all paths                        | Prevents accidentally returning `undefined`                           |
+| `noFallthroughCasesInSwitch`       | Switch cases must break or return                                                  | Prevents accidental fallthrough bugs                                  |
+| `forceConsistentCasingInFileNames` | `import "./File"` must match actual filename casing                                | Prevents cross-platform bugs (macOS is case-insensitive, Linux isn't) |
+| `exactOptionalPropertyTypes`       | `prop?: string` means the property is absent, NOT `string \| undefined`            | Prevents assigning `undefined` to optional properties                 |
 
 ---
 
@@ -28,6 +28,7 @@ Every package uses `strict: true` plus additional flags. Here's what each flag c
 ### Banned Patterns (with examples)
 
 **Null-checking TypeScript-guaranteed non-null values:**
+
 ```typescript
 // BAD: TypeScript already guarantees user is non-null
 function getUser(user: User) {
@@ -44,6 +45,7 @@ function getUser(user: User) {
 ```
 
 **Try/catch around non-throwing code:**
+
 ```typescript
 // BAD: Arithmetic cannot throw
 try {
@@ -57,6 +59,7 @@ const total = price * quantity;
 ```
 
 **typeof checks on already-typed values:**
+
 ```typescript
 // BAD: x is already typed as string
 function format(x: string) {
@@ -73,6 +76,7 @@ function format(x: string) {
 ```
 
 **Commented-out code:**
+
 ```typescript
 // BAD: Dead code left "just in case"
 // const oldFunction = () => { ... };
@@ -81,6 +85,7 @@ function format(x: string) {
 ```
 
 **Empty catch blocks:**
+
 ```typescript
 // BAD: Swallowing errors silently
 try {
@@ -98,6 +103,7 @@ try {
 ```
 
 **Redundant else after return:**
+
 ```typescript
 // BAD: Unnecessary nesting
 function check(value: number) {
@@ -156,15 +162,15 @@ function check(value: number) {
 
 **Domain error types:**
 
-| Error | Code | HTTP | When |
-|-------|------|------|------|
-| `ValidationError` | VALIDATION_ERROR | 400 | Zod validation fails |
-| `InvalidOtpError` | INVALID_OTP | 401 | OTP incorrect/expired |
-| `PermissionDeniedError` | PERMISSION_DENIED | 403 | Role insufficient |
-| `ActivationGateError` | ACTIVATION_GATE | 403 | Family < 2 members |
-| `NotFoundError` | NOT_FOUND | 404 | Entity doesn't exist |
-| `UserNotFoundError` | USER_NOT_FOUND | 404 | User lookup fails |
-| `UserAlreadyExistsError` | USER_ALREADY_EXISTS | 409 | Duplicate phone |
+| Error                    | Code                | HTTP | When                  |
+| ------------------------ | ------------------- | ---- | --------------------- |
+| `ValidationError`        | VALIDATION_ERROR    | 400  | Zod validation fails  |
+| `InvalidOtpError`        | INVALID_OTP         | 401  | OTP incorrect/expired |
+| `PermissionDeniedError`  | PERMISSION_DENIED   | 403  | Role insufficient     |
+| `ActivationGateError`    | ACTIVATION_GATE     | 403  | Family < 2 members    |
+| `NotFoundError`          | NOT_FOUND           | 404  | Entity doesn't exist  |
+| `UserNotFoundError`      | USER_NOT_FOUND      | 404  | User lookup fails     |
+| `UserAlreadyExistsError` | USER_ALREADY_EXISTS | 409  | Duplicate phone       |
 
 ---
 
@@ -187,14 +193,15 @@ function check(value: number) {
 
 ### Coverage Thresholds
 
-| Scope | Minimum | Enforced |
-|-------|---------|----------|
-| Overall (all packages) | 80% lines | CI gate |
-| `use-cases/` directory | 100% lines | CI gate |
+| Scope                  | Minimum    | Enforced |
+| ---------------------- | ---------- | -------- |
+| Overall (all packages) | 80% lines  | CI gate  |
+| `use-cases/` directory | 100% lines | CI gate  |
 
 ### What to Test at Each Level
 
 **Unit tests:**
+
 - Use cases with mocked repository interfaces
 - Domain model logic
 - Relationship inference engine (exhaustive cases)
@@ -203,16 +210,19 @@ function check(value: number) {
 - Components (React Native Testing Library)
 
 **Integration tests:**
+
 - Lambda handlers with DynamoDB Local (real DB operations)
 - Permission enforcement across all operations
 
 **E2E tests (Detox):**
+
 - Register → create family → invite → locked feed
 - Invitee accepts → mini-tour → post
 - Family switching with theme change
 - Event creation → reminder notification
 
 ### Prohibited Patterns
+
 - No testing implementation details (test behavior, not internal state)
 - No snapshot-only tests (snapshots are fragile and don't test behavior)
 - No `any` in test files (same rules as production code)
@@ -221,19 +231,19 @@ function check(value: number) {
 
 ## 6. ESLint Rules Inventory
 
-| Rule | What It Catches | Rationale |
-|------|----------------|-----------|
-| `@typescript-eslint/no-explicit-any` | Usage of `any` type | Forces proper typing, prevents type escape hatches |
-| `@typescript-eslint/no-floating-promises` | Unawaited promises | Prevents silent async failures |
-| `@typescript-eslint/strict-boolean-expressions` | Truthy/falsy on non-booleans | Prevents `if (string)` instead of `if (string.length > 0)` |
-| `@typescript-eslint/no-unused-vars` | Unused variables/imports | Dead code detection |
-| `@typescript-eslint/no-unnecessary-condition` | Conditions always true/false | Catches defensive null-checks on guaranteed non-null |
-| `@typescript-eslint/no-redundant-type-constituents` | Redundant type unions | Catches `string \| never` |
-| `@typescript-eslint/no-useless-constructor` | Empty constructors | Dead code |
-| `no-else-return` | Else after return | Reduces nesting |
-| `no-unreachable` | Code after return/throw | Dead code |
-| `import/no-cycle` | Circular imports | Prevents dependency cycles |
-| `boundaries/element-types` | Cross-layer imports | Enforces clean architecture (see [Architecture Patterns](#8-architecture-pattern-enforcement)) |
+| Rule                                                | What It Catches              | Rationale                                                                                      |
+| --------------------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| `@typescript-eslint/no-explicit-any`                | Usage of `any` type          | Forces proper typing, prevents type escape hatches                                             |
+| `@typescript-eslint/no-floating-promises`           | Unawaited promises           | Prevents silent async failures                                                                 |
+| `@typescript-eslint/strict-boolean-expressions`     | Truthy/falsy on non-booleans | Prevents `if (string)` instead of `if (string.length > 0)`                                     |
+| `@typescript-eslint/no-unused-vars`                 | Unused variables/imports     | Dead code detection                                                                            |
+| `@typescript-eslint/no-unnecessary-condition`       | Conditions always true/false | Catches defensive null-checks on guaranteed non-null                                           |
+| `@typescript-eslint/no-redundant-type-constituents` | Redundant type unions        | Catches `string \| never`                                                                      |
+| `@typescript-eslint/no-useless-constructor`         | Empty constructors           | Dead code                                                                                      |
+| `no-else-return`                                    | Else after return            | Reduces nesting                                                                                |
+| `no-unreachable`                                    | Code after return/throw      | Dead code                                                                                      |
+| `import/no-cycle`                                   | Circular imports             | Prevents dependency cycles                                                                     |
+| `boundaries/element-types`                          | Cross-layer imports          | Enforces clean architecture (see [Architecture Patterns](#8-architecture-pattern-enforcement)) |
 
 ---
 
@@ -279,14 +289,14 @@ PR Created
 └─────────────────────────────────────────────┘
 ```
 
-| Layer | Can Import | Cannot Import |
-|-------|-----------|---------------|
-| `domain/` | Nothing | Everything else |
-| `repositories/interfaces/` | `domain/` | use-cases, handlers, dynamodb |
-| `use-cases/` | `domain/`, `repositories/interfaces/`, `shared/` | handlers, repositories/dynamodb |
-| `repositories/dynamodb/` | `domain/`, `repositories/interfaces/` | use-cases, handlers |
-| `handlers/` | All layers | — |
-| `shared/` | `domain/` | use-cases, handlers, repositories |
+| Layer                      | Can Import                                       | Cannot Import                     |
+| -------------------------- | ------------------------------------------------ | --------------------------------- |
+| `domain/`                  | Nothing                                          | Everything else                   |
+| `repositories/interfaces/` | `domain/`                                        | use-cases, handlers, dynamodb     |
+| `use-cases/`               | `domain/`, `repositories/interfaces/`, `shared/` | handlers, repositories/dynamodb   |
+| `repositories/dynamodb/`   | `domain/`, `repositories/interfaces/`            | use-cases, handlers               |
+| `handlers/`                | All layers                                       | —                                 |
+| `shared/`                  | `domain/`                                        | use-cases, handlers, repositories |
 
 > See [01-backend.md](architecture/01-backend.md) for detailed architecture explanation.
 
@@ -301,6 +311,7 @@ Format: `<type>(<scope>): <description>`
 Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`
 
 Examples:
+
 ```
 feat(feed): add post creation with media upload
 fix(tree): correct spouse generation assignment in BFS
@@ -330,15 +341,15 @@ docs(architecture): add data model deep dive
 
 ### Configuration
 
-| Setting | Value | Why |
-|---------|-------|-----|
-| `semi` | `true` | Explicit statement termination |
-| `singleQuote` | `false` | Consistency — double quotes throughout |
-| `trailingComma` | `all` | Cleaner git diffs |
-| `printWidth` | `100` | Readable without horizontal scrolling |
-| `tabWidth` | `2` | Standard for TypeScript |
-| `arrowParens` | `always` | Consistent arrow function style |
-| `endOfLine` | `lf` | Unix line endings (cross-platform consistency) |
+| Setting         | Value    | Why                                            |
+| --------------- | -------- | ---------------------------------------------- |
+| `semi`          | `true`   | Explicit statement termination                 |
+| `singleQuote`   | `false`  | Consistency — double quotes throughout         |
+| `trailingComma` | `all`    | Cleaner git diffs                              |
+| `printWidth`    | `100`    | Readable without horizontal scrolling          |
+| `tabWidth`      | `2`      | Standard for TypeScript                        |
+| `arrowParens`   | `always` | Consistent arrow function style                |
+| `endOfLine`     | `lf`     | Unix line endings (cross-platform consistency) |
 
 ### Pre-commit Flow
 

@@ -9,7 +9,16 @@ import { EventCard } from "../components/EventCard";
 import { PostCard } from "../components/PostCard";
 
 type FeedItem =
-  | { type: "post"; id: string; authorName: string; textContent: string; timeAgo: string; mediaUrls: string[]; reactionCount: number; commentCount: number }
+  | {
+      type: "post";
+      id: string;
+      authorName: string;
+      textContent: string;
+      timeAgo: string;
+      mediaUrls: string[];
+      reactionCount: number;
+      commentCount: number;
+    }
   | { type: "event"; id: string; title: string; date: string; daysAway: number; eventType: string };
 
 interface FeedScreenProps {
@@ -66,7 +75,9 @@ export function FeedScreen({
             date={item.date}
             daysAway={item.daysAway}
             eventType={item.eventType}
-            onPress={() => { onEventPress(item.id); }}
+            onPress={() => {
+              onEventPress(item.id);
+            }}
           />
         );
       }
@@ -79,10 +90,18 @@ export function FeedScreen({
           mediaUrls={item.mediaUrls}
           reactionCount={item.reactionCount}
           commentCount={item.commentCount}
-          onReact={() => { onReact(item.id); }}
-          onComment={() => { onComment(item.id); }}
-          onShare={() => { handleShare(item.textContent); }}
-          onPress={() => { onPostPress(item.id); }}
+          onReact={() => {
+            onReact(item.id);
+          }}
+          onComment={() => {
+            onComment(item.id);
+          }}
+          onShare={() => {
+            handleShare(item.textContent);
+          }}
+          onPress={() => {
+            onPostPress(item.id);
+          }}
         />
       );
     },
@@ -96,9 +115,7 @@ export function FeedScreen({
         keyExtractor={(item) => `${item.type}-${item.id}`}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
         onEndReached={onLoadMore}
         onEndReachedThreshold={0.5}
         ListHeaderComponent={

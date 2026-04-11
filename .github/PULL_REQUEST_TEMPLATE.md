@@ -1,7 +1,9 @@
 ## Summary
+
 <!-- 1-3 bullet points describing what this PR does -->
 
 ## Checklist
+
 - [ ] Follows layer boundaries (handler → use case → repo)
 - [ ] Input validated at API boundary with Zod
 - [ ] Permissions checked before business logic
@@ -14,4 +16,5 @@
 - [ ] All CI gates pass
 
 ## Test Plan
+
 <!-- How to verify this works -->

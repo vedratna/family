@@ -6,15 +6,31 @@ import type { IMembershipRepository } from "../../../repositories/interfaces/mem
 import { UpdateMemberRole } from "../update-member-role";
 
 function mockMembershipRepo(): IMembershipRepository {
-  return { create: vi.fn(), getByFamilyId: vi.fn(), getByUserId: vi.fn(), getByFamilyAndPerson: vi.fn(), updateRole: vi.fn(), delete: vi.fn(), countActiveMembers: vi.fn() };
+  return {
+    create: vi.fn(),
+    getByFamilyId: vi.fn(),
+    getByUserId: vi.fn(),
+    getByFamilyAndPerson: vi.fn(),
+    updateRole: vi.fn(),
+    delete: vi.fn(),
+    countActiveMembers: vi.fn(),
+  };
 }
 
 const editorMembership: FamilyMembership = {
-  familyId: "fam-1", personId: "person-2", userId: "u2", role: "editor", joinedAt: "2026-01-01T00:00:00Z",
+  familyId: "fam-1",
+  personId: "person-2",
+  userId: "u2",
+  role: "editor",
+  joinedAt: "2026-01-01T00:00:00Z",
 };
 
 const ownerMembership: FamilyMembership = {
-  familyId: "fam-1", personId: "person-1", userId: "u1", role: "owner", joinedAt: "2026-01-01T00:00:00Z",
+  familyId: "fam-1",
+  personId: "person-1",
+  userId: "u1",
+  role: "owner",
+  joinedAt: "2026-01-01T00:00:00Z",
 };
 
 describe("UpdateMemberRole", () => {

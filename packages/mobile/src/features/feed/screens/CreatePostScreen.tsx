@@ -45,7 +45,8 @@ export function CreatePostScreen({
           testID="pick-media-button"
         >
           <Text style={[styles.mediaButtonText, { color: theme.colors.accent.primary }]}>
-            {"\uD83D\uDCF7"} {selectedMediaCount > 0 ? `${String(selectedMediaCount)} selected` : "Add Photo/Video"}
+            {"\uD83D\uDCF7"}{" "}
+            {selectedMediaCount > 0 ? `${String(selectedMediaCount)} selected` : "Add Photo/Video"}
           </Text>
         </Pressable>
 

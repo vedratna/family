@@ -47,7 +47,12 @@ export class EditRelationship {
 export class DeleteRelationship {
   constructor(private readonly relationshipRepo: IRelationshipRepository) {}
 
-  async execute(familyId: string, personAId: string, personBId: string, requesterRole: Role): Promise<void> {
+  async execute(
+    familyId: string,
+    personAId: string,
+    personBId: string,
+    requesterRole: Role,
+  ): Promise<void> {
     requireRole(requesterRole, "admin", "delete relationships");
 
     await this.relationshipRepo.delete(familyId, personAId, personBId);

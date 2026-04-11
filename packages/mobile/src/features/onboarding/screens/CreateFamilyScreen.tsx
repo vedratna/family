@@ -58,9 +58,7 @@ export function CreateFamilyScreen({ onSubmit }: CreateFamilyScreenProps) {
         style={[
           styles.button,
           {
-            backgroundColor: isValid
-              ? previewAccent.primary
-              : theme.colors.background.tertiary,
+            backgroundColor: isValid ? previewAccent.primary : theme.colors.background.tertiary,
           },
         ]}
         onPress={() => {

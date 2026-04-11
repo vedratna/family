@@ -45,7 +45,14 @@ export function CreateEventScreen({ onSubmit }: CreateEventScreenProps) {
     >
       <Text style={[styles.label, { color: theme.colors.text.primary }]}>Event Title</Text>
       <TextInput
-        style={[styles.input, { color: theme.colors.text.primary, borderColor: theme.colors.border.primary, backgroundColor: theme.colors.background.card }]}
+        style={[
+          styles.input,
+          {
+            color: theme.colors.text.primary,
+            borderColor: theme.colors.border.primary,
+            backgroundColor: theme.colors.background.card,
+          },
+        ]}
         value={title}
         onChangeText={setTitle}
         placeholder="e.g., Grandma's Birthday"
@@ -61,22 +68,39 @@ export function CreateEventScreen({ onSubmit }: CreateEventScreenProps) {
             style={[
               styles.typeChip,
               {
-                backgroundColor: eventType === opt.value ? theme.colors.accent.light : theme.colors.background.card,
-                borderColor: eventType === opt.value ? theme.colors.accent.primary : theme.colors.border.primary,
+                backgroundColor:
+                  eventType === opt.value
+                    ? theme.colors.accent.light
+                    : theme.colors.background.card,
+                borderColor:
+                  eventType === opt.value
+                    ? theme.colors.accent.primary
+                    : theme.colors.border.primary,
               },
             ]}
-            onPress={() => { setEventType(opt.value); }}
+            onPress={() => {
+              setEventType(opt.value);
+            }}
             testID={`event-type-${opt.value}`}
           >
             <Text style={styles.typeEmoji}>{opt.emoji}</Text>
-            <Text style={[styles.typeLabel, { color: theme.colors.text.primary }]}>{opt.label}</Text>
+            <Text style={[styles.typeLabel, { color: theme.colors.text.primary }]}>
+              {opt.label}
+            </Text>
           </Pressable>
         ))}
       </View>
 
       <Text style={[styles.label, { color: theme.colors.text.primary }]}>Date (YYYY-MM-DD)</Text>
       <TextInput
-        style={[styles.input, { color: theme.colors.text.primary, borderColor: theme.colors.border.primary, backgroundColor: theme.colors.background.card }]}
+        style={[
+          styles.input,
+          {
+            color: theme.colors.text.primary,
+            borderColor: theme.colors.border.primary,
+            backgroundColor: theme.colors.background.card,
+          },
+        ]}
         value={startDate}
         onChangeText={setStartDate}
         placeholder="2026-04-12"
@@ -86,7 +110,14 @@ export function CreateEventScreen({ onSubmit }: CreateEventScreenProps) {
 
       <Text style={[styles.label, { color: theme.colors.text.primary }]}>Time (optional)</Text>
       <TextInput
-        style={[styles.input, { color: theme.colors.text.primary, borderColor: theme.colors.border.primary, backgroundColor: theme.colors.background.card }]}
+        style={[
+          styles.input,
+          {
+            color: theme.colors.text.primary,
+            borderColor: theme.colors.border.primary,
+            backgroundColor: theme.colors.background.card,
+          },
+        ]}
         value={startTime}
         onChangeText={setStartTime}
         placeholder="18:00"
@@ -96,7 +127,14 @@ export function CreateEventScreen({ onSubmit }: CreateEventScreenProps) {
 
       <Text style={[styles.label, { color: theme.colors.text.primary }]}>Location (optional)</Text>
       <TextInput
-        style={[styles.input, { color: theme.colors.text.primary, borderColor: theme.colors.border.primary, backgroundColor: theme.colors.background.card }]}
+        style={[
+          styles.input,
+          {
+            color: theme.colors.text.primary,
+            borderColor: theme.colors.border.primary,
+            backgroundColor: theme.colors.background.card,
+          },
+        ]}
         value={location}
         onChangeText={setLocation}
         placeholder="e.g., Grandma's House"
@@ -104,9 +142,19 @@ export function CreateEventScreen({ onSubmit }: CreateEventScreenProps) {
         testID="event-location-input"
       />
 
-      <Text style={[styles.label, { color: theme.colors.text.primary }]}>Description (optional)</Text>
+      <Text style={[styles.label, { color: theme.colors.text.primary }]}>
+        Description (optional)
+      </Text>
       <TextInput
-        style={[styles.input, styles.multiline, { color: theme.colors.text.primary, borderColor: theme.colors.border.primary, backgroundColor: theme.colors.background.card }]}
+        style={[
+          styles.input,
+          styles.multiline,
+          {
+            color: theme.colors.text.primary,
+            borderColor: theme.colors.border.primary,
+            backgroundColor: theme.colors.background.card,
+          },
+        ]}
         value={description}
         onChangeText={setDescription}
         placeholder="Add details..."
@@ -117,7 +165,9 @@ export function CreateEventScreen({ onSubmit }: CreateEventScreenProps) {
 
       <Pressable
         style={[styles.recurringToggle, { borderColor: theme.colors.border.primary }]}
-        onPress={() => { setIsRecurring((prev) => !prev); }}
+        onPress={() => {
+          setIsRecurring((prev) => !prev);
+        }}
         testID="recurring-toggle"
       >
         <Text style={{ color: theme.colors.text.primary }}>
@@ -126,7 +176,14 @@ export function CreateEventScreen({ onSubmit }: CreateEventScreenProps) {
       </Pressable>
 
       <Pressable
-        style={[styles.button, { backgroundColor: isValid ? theme.colors.accent.primary : theme.colors.background.tertiary }]}
+        style={[
+          styles.button,
+          {
+            backgroundColor: isValid
+              ? theme.colors.accent.primary
+              : theme.colors.background.tertiary,
+          },
+        ]}
         onPress={() => {
           if (isValid) {
             onSubmit({
@@ -143,7 +200,12 @@ export function CreateEventScreen({ onSubmit }: CreateEventScreenProps) {
         disabled={!isValid}
         testID="create-event-button"
       >
-        <Text style={[styles.buttonText, { color: isValid ? theme.colors.accent.onColor : theme.colors.text.tertiary }]}>
+        <Text
+          style={[
+            styles.buttonText,
+            { color: isValid ? theme.colors.accent.onColor : theme.colors.text.tertiary },
+          ]}
+        >
           Create Event
         </Text>
       </Pressable>
@@ -155,13 +217,33 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 48 },
   label: { fontSize: 14, fontWeight: "500", marginBottom: 8, marginTop: 16 },
-  input: { fontSize: 16, borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12 },
+  input: {
+    fontSize: 16,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
   multiline: { minHeight: 80, textAlignVertical: "top" },
   typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  typeChip: { flexDirection: "row", borderWidth: 1, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, gap: 4, alignItems: "center" },
+  typeChip: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    gap: 4,
+    alignItems: "center",
+  },
   typeEmoji: { fontSize: 16 },
   typeLabel: { fontSize: 13 },
-  recurringToggle: { marginTop: 16, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderRadius: 10 },
+  recurringToggle: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderRadius: 10,
+  },
   button: { borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 24 },
   buttonText: { fontSize: 16, fontWeight: "600" },
 });

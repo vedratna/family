@@ -5,6 +5,10 @@ export interface IPersonRepository {
   getById(familyId: string, personId: string): Promise<Person | undefined>;
   getByFamilyId(familyId: string): Promise<Person[]>;
   getByUserId(familyId: string, userId: string): Promise<Person | undefined>;
-  update(familyId: string, personId: string, updates: Partial<Pick<Person, "name" | "profilePhotoKey">>): Promise<void>;
+  update(
+    familyId: string,
+    personId: string,
+    updates: Partial<Pick<Person, "name" | "profilePhotoKey">>,
+  ): Promise<void>;
   delete(familyId: string, personId: string): Promise<void>;
 }

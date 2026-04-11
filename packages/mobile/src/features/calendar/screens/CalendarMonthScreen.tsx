@@ -22,8 +22,18 @@ interface CalendarMonthScreenProps {
 }
 
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ] as const;
 
 export function CalendarMonthScreen({
@@ -66,7 +76,9 @@ export function CalendarMonthScreen({
             key={index}
             style={[
               styles.dayCell,
-              day.isToday ? { backgroundColor: theme.colors.accent.primary, borderRadius: 20 } : undefined,
+              day.isToday
+                ? { backgroundColor: theme.colors.accent.primary, borderRadius: 20 }
+                : undefined,
             ]}
             onPress={() => {
               if (day.isCurrentMonth) {
@@ -107,13 +119,23 @@ export function CalendarMonthScreen({
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
   navArrow: { fontSize: 28, fontWeight: "300", paddingHorizontal: 16 },
   monthTitle: { fontSize: 20, fontWeight: "600" },
   weekdayRow: { flexDirection: "row", justifyContent: "space-around", marginBottom: 8 },
   weekday: { fontSize: 13, fontWeight: "500", width: 40, textAlign: "center" },
   daysGrid: { flexDirection: "row", flexWrap: "wrap" },
-  dayCell: { width: `${String(100 / 7)}%` as DimensionValue, aspectRatio: 1, alignItems: "center", justifyContent: "center" },
+  dayCell: {
+    width: `${String(100 / 7)}%` as DimensionValue,
+    aspectRatio: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   dayText: { fontSize: 16 },
   eventDot: { width: 5, height: 5, borderRadius: 2.5, marginTop: 2 },
   agendaLink: { fontSize: 14, fontWeight: "500", textAlign: "center", marginTop: 24 },

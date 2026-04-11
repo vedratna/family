@@ -3,13 +3,14 @@ import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 const endpoint = process.env["DYNAMODB_ENDPOINT"];
 
-const config: DynamoDBClientConfig = endpoint !== undefined
-  ? {
-      endpoint,
-      region: "local",
-      credentials: { accessKeyId: "local", secretAccessKey: "local" },
-    }
-  : {};
+const config: DynamoDBClientConfig =
+  endpoint !== undefined
+    ? {
+        endpoint,
+        region: "local",
+        credentials: { accessKeyId: "local", secretAccessKey: "local" },
+      }
+    : {};
 
 const baseClient = new DynamoDBClient(config);
 

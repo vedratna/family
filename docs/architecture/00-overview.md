@@ -53,19 +53,19 @@ A privacy-first family app for extended families to connect, share, and organize
 
 ## Tech Stack
 
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| Mobile | React Native (Expo) | Single codebase for iOS + Android |
-| API | AWS AppSync (GraphQL) | Typed queries, real-time subscriptions, reduced round-trips |
-| Auth | AWS Cognito | Phone OTP + Google/Apple social login, managed |
-| Compute | AWS Lambda | Pay-per-request, zero cost at idle |
-| Database | DynamoDB (single-table) | Near-zero cost at low scale, on-demand billing |
-| Media | S3 + presigned URLs | Direct client upload, cheap storage |
-| Notifications | SNS | Cross-platform push notifications |
-| Scheduling | EventBridge | Cron-based event reminders |
-| Infra | AWS CDK (TypeScript) | Type-safe infrastructure, same language as app |
-| Monorepo | Turborepo | Build caching, parallel tasks |
-| Testing | Vitest | Fast, TypeScript-native |
+| Layer         | Technology              | Why                                                         |
+| ------------- | ----------------------- | ----------------------------------------------------------- |
+| Mobile        | React Native (Expo)     | Single codebase for iOS + Android                           |
+| API           | AWS AppSync (GraphQL)   | Typed queries, real-time subscriptions, reduced round-trips |
+| Auth          | AWS Cognito             | Phone OTP + Google/Apple social login, managed              |
+| Compute       | AWS Lambda              | Pay-per-request, zero cost at idle                          |
+| Database      | DynamoDB (single-table) | Near-zero cost at low scale, on-demand billing              |
+| Media         | S3 + presigned URLs     | Direct client upload, cheap storage                         |
+| Notifications | SNS                     | Cross-platform push notifications                           |
+| Scheduling    | EventBridge             | Cron-based event reminders                                  |
+| Infra         | AWS CDK (TypeScript)    | Type-safe infrastructure, same language as app              |
+| Monorepo      | Turborepo               | Build caching, parallel tasks                               |
+| Testing       | Vitest                  | Fast, TypeScript-native                                     |
 
 ## Monorepo Structure
 
@@ -85,21 +85,21 @@ family/
 
 ## Where Does X Live?
 
-| Feature | Backend | Mobile | Shared |
-|---------|---------|--------|--------|
-| Auth (login, register) | `use-cases/auth/` | `features/auth/` | `types/user.ts` |
-| Family CRUD | `use-cases/family/` | `features/family/` | `types/family.ts` |
-| Member relationships | `use-cases/relationships/` | `features/relationships/` | `types/relationship.ts` |
-| Family tree | `use-cases/tree/` | `features/tree/` | — |
-| Social feed | `use-cases/feed/` | `features/feed/` | `types/post.ts` |
-| Calendar | `use-cases/calendar/` | `features/calendar/` | `types/event.ts` |
-| Notifications | `use-cases/notifications/` | `features/notifications/` | `types/notification.ts` |
-| Media upload | `use-cases/media/` | — | `types/media.ts` |
-| Chores | `use-cases/chores/` | `features/chores/` | `types/chore.ts` |
-| Onboarding | — | `features/onboarding/` | — |
-| Theming | — | `shared/theme/` | `types/theme.ts` |
-| DynamoDB keys/ops | `repositories/dynamodb/` | — | — |
-| Validation schemas | — | — | `validation/*.ts` |
-| Domain errors | `domain/errors/` | — | — |
-| Permission checks | `shared/permission-check.ts` | — | `types/roles.ts` |
-| CDK infrastructure | — | — | `infra/lib/` |
+| Feature                | Backend                      | Mobile                    | Shared                  |
+| ---------------------- | ---------------------------- | ------------------------- | ----------------------- |
+| Auth (login, register) | `use-cases/auth/`            | `features/auth/`          | `types/user.ts`         |
+| Family CRUD            | `use-cases/family/`          | `features/family/`        | `types/family.ts`       |
+| Member relationships   | `use-cases/relationships/`   | `features/relationships/` | `types/relationship.ts` |
+| Family tree            | `use-cases/tree/`            | `features/tree/`          | —                       |
+| Social feed            | `use-cases/feed/`            | `features/feed/`          | `types/post.ts`         |
+| Calendar               | `use-cases/calendar/`        | `features/calendar/`      | `types/event.ts`        |
+| Notifications          | `use-cases/notifications/`   | `features/notifications/` | `types/notification.ts` |
+| Media upload           | `use-cases/media/`           | —                         | `types/media.ts`        |
+| Chores                 | `use-cases/chores/`          | `features/chores/`        | `types/chore.ts`        |
+| Onboarding             | —                            | `features/onboarding/`    | —                       |
+| Theming                | —                            | `shared/theme/`           | `types/theme.ts`        |
+| DynamoDB keys/ops      | `repositories/dynamodb/`     | —                         | —                       |
+| Validation schemas     | —                            | —                         | `validation/*.ts`       |
+| Domain errors          | `domain/errors/`             | —                         | —                       |
+| Permission checks      | `shared/permission-check.ts` | —                         | `types/roles.ts`        |
+| CDK infrastructure     | —                            | —                         | `infra/lib/`            |

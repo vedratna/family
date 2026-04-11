@@ -5,21 +5,25 @@ The family-app codebase is fully built (237 tasks, 121 tests, 15 documentation f
 ## What Changes
 
 **Local Development (3 phases):**
+
 - Phase 1: Mock data providers for all screens — immediate visual feel without any backend
 - Phase 2: Local Express API server wired to real use cases + DynamoDB Local — test actual business logic
 - Phase 3: Cloud sandbox documentation — optional cloud-parity local dev
 
 **GitHub Repository:**
+
 - Branch protection rules, required status checks, squash merge policy
 - Initial PR strategy for splitting the existing codebase into reviewable PRs
 
 **Deployment Pipelines:**
+
 - GitHub Actions deploy workflow: auto-deploy to dev on merge to main
 - Production deployment workflow: manual trigger with approval gate
 - CDK deploy flow (diff → deploy → smoke test)
 - Expo EAS configuration for mobile builds (development, preview, production profiles)
 
 **Credentials & Environment:**
+
 - `.env.example` template with all required variables
 - SSM Parameter Store setup script for AWS secrets
 - Credentials checklist with setup instructions per service

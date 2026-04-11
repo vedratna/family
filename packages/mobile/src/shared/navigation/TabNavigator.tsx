@@ -21,14 +21,24 @@ export function TabNavigator({ activeTab, onTabPress }: TabNavigatorProps) {
   const theme = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background.card, borderTopColor: theme.colors.border.secondary }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.colors.background.card,
+          borderTopColor: theme.colors.border.secondary,
+        },
+      ]}
+    >
       {TABS.map((tab) => {
         const isActive = activeTab === tab.key;
         return (
           <Pressable
             key={tab.key}
             style={styles.tab}
-            onPress={() => { onTabPress(tab.key); }}
+            onPress={() => {
+              onTabPress(tab.key);
+            }}
             testID={`tab-${tab.key}`}
           >
             <Text style={styles.icon}>{tab.icon}</Text>

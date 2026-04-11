@@ -5,6 +5,7 @@
 ## Creating Events
 
 Tap **+** on the calendar screen. Fill in:
+
 - **Title** — e.g., "Grandma's 75th Birthday"
 - **Event Type** — Birthday 🎂, Marriage 💍, Anniversary ❤️, Exam 📚, Social Function 🎉, Holiday 🌴, or Custom 📅
 - **Date** — when it happens
@@ -19,6 +20,7 @@ Toggle **"Repeat annually"** for events that happen every year (birthdays, anniv
 ## Calendar Views
 
 ### Month View
+
 See the entire month at a glance. Days with events show a colored dot. Tap any day to see that day's events.
 
 ```
@@ -34,11 +36,13 @@ Su  Mo  Tu  We  Th  Fr  Sa
 ```
 
 ### Agenda View
+
 A scrollable list of upcoming events grouped by date. Shows event emoji, title, time, and location.
 
 ## RSVP
 
 Open any event and indicate your attendance:
+
 - **Going** — you'll be there
 - **Maybe** — not sure yet
 - **Not Going** — can't make it
@@ -48,6 +52,7 @@ The event shows how many people are going.
 ## Automatic Reminders
 
 When an event is created, the system schedules push notifications:
+
 - **7 days before** — "Grandma's birthday in 1 week!"
 - **1 day before** — "Grandma's birthday is tomorrow!"
 - **Day of** — "Grandma's birthday is today! 🎂"

@@ -4,22 +4,22 @@ Complete inventory of all credentials needed, organized by when you need them.
 
 ## Credentials Matrix
 
-| Credential | Stage Needed | Where to Get | Where to Store | Consumed By |
-|------------|-------------|--------------|----------------|-------------|
-| **AWS IAM Access Key** | Dev deploy+ | AWS IAM Console | GitHub Secrets | GitHub Actions (CDK deploy) |
-| **AWS IAM Secret Key** | Dev deploy+ | AWS IAM Console | GitHub Secrets | GitHub Actions (CDK deploy) |
-| **CDK Bootstrap** | Dev deploy+ | `cdk bootstrap` command | N/A (one-time) | CDK |
-| **Google OAuth Client ID** | Dev with auth+ | Google Cloud Console | CDK parameter | Cognito |
-| **Google OAuth Client Secret** | Dev with auth+ | Google Cloud Console | SSM `/family/<stage>/google-client-secret` | Cognito |
-| **Apple Service ID** | Dev with auth+ | Apple Developer Portal | CDK parameter | Cognito |
-| **Apple Team ID** | Dev with auth+ | Apple Developer Portal | CDK parameter | Cognito |
-| **Apple Key ID** | Dev with auth+ | Apple Developer Portal | CDK parameter | Cognito |
-| **Apple Private Key** | Dev with auth+ | Apple Developer Portal | CDK parameter | Cognito |
-| **APNs Certificate/Key** | Dev with notifs+ | Apple Developer Portal | SNS Platform App (manual) | SNS |
-| **FCM Server Key** | Dev with notifs+ | Firebase Console | SNS Platform App (manual) | SNS |
-| **Expo Token** | EAS builds | expo.dev Account Settings | GitHub Secrets | EAS Build workflow |
-| **App Store Connect API Key** | Prod app submission | App Store Connect | GitHub Secrets | EAS Submit |
-| **Google Play Service Account** | Prod app submission | Google Play Console | GitHub Secrets | EAS Submit |
+| Credential                      | Stage Needed        | Where to Get              | Where to Store                             | Consumed By                 |
+| ------------------------------- | ------------------- | ------------------------- | ------------------------------------------ | --------------------------- |
+| **AWS IAM Access Key**          | Dev deploy+         | AWS IAM Console           | GitHub Secrets                             | GitHub Actions (CDK deploy) |
+| **AWS IAM Secret Key**          | Dev deploy+         | AWS IAM Console           | GitHub Secrets                             | GitHub Actions (CDK deploy) |
+| **CDK Bootstrap**               | Dev deploy+         | `cdk bootstrap` command   | N/A (one-time)                             | CDK                         |
+| **Google OAuth Client ID**      | Dev with auth+      | Google Cloud Console      | CDK parameter                              | Cognito                     |
+| **Google OAuth Client Secret**  | Dev with auth+      | Google Cloud Console      | SSM `/family/<stage>/google-client-secret` | Cognito                     |
+| **Apple Service ID**            | Dev with auth+      | Apple Developer Portal    | CDK parameter                              | Cognito                     |
+| **Apple Team ID**               | Dev with auth+      | Apple Developer Portal    | CDK parameter                              | Cognito                     |
+| **Apple Key ID**                | Dev with auth+      | Apple Developer Portal    | CDK parameter                              | Cognito                     |
+| **Apple Private Key**           | Dev with auth+      | Apple Developer Portal    | CDK parameter                              | Cognito                     |
+| **APNs Certificate/Key**        | Dev with notifs+    | Apple Developer Portal    | SNS Platform App (manual)                  | SNS                         |
+| **FCM Server Key**              | Dev with notifs+    | Firebase Console          | SNS Platform App (manual)                  | SNS                         |
+| **Expo Token**                  | EAS builds          | expo.dev Account Settings | GitHub Secrets                             | EAS Build workflow          |
+| **App Store Connect API Key**   | Prod app submission | App Store Connect         | GitHub Secrets                             | EAS Submit                  |
+| **Google Play Service Account** | Prod app submission | Google Play Console       | GitHub Secrets                             | EAS Submit                  |
 
 ## Per-Stage Requirements
 

@@ -1,7 +1,10 @@
 import type { NotificationPreference, DeviceToken } from "@family-app/shared";
 import { describe, it, expect, vi } from "vitest";
 
-import type { IDeviceTokenRepository, INotificationPreferenceRepository } from "../../../repositories/interfaces/notification-repo";
+import type {
+  IDeviceTokenRepository,
+  INotificationPreferenceRepository,
+} from "../../../repositories/interfaces/notification-repo";
 import type { IPushNotificationSender } from "../send-push-notification";
 import { SendPushNotification } from "../send-push-notification";
 
@@ -33,7 +36,12 @@ describe("SendPushNotification", () => {
     ]);
     const tokenRepo = mockDeviceTokenRepo([
       { userId: "u1", deviceToken: "tok-1", platform: "ios", createdAt: "2026-01-01T00:00:00Z" },
-      { userId: "u1", deviceToken: "tok-2", platform: "android", createdAt: "2026-01-01T00:00:00Z" },
+      {
+        userId: "u1",
+        deviceToken: "tok-2",
+        platform: "android",
+        createdAt: "2026-01-01T00:00:00Z",
+      },
     ]);
     const sender = mockSender();
     const useCase = new SendPushNotification(prefRepo, tokenRepo, sender);
@@ -48,8 +56,18 @@ describe("SendPushNotification", () => {
 
     expect(count).toBe(2);
     expect(sender.send).toHaveBeenCalledTimes(2);
-    expect(sender.send).toHaveBeenCalledWith("tok-1", "ios", "Birthday", "Grandma's birthday is tomorrow!");
-    expect(sender.send).toHaveBeenCalledWith("tok-2", "android", "Birthday", "Grandma's birthday is tomorrow!");
+    expect(sender.send).toHaveBeenCalledWith(
+      "tok-1",
+      "ios",
+      "Birthday",
+      "Grandma's birthday is tomorrow!",
+    );
+    expect(sender.send).toHaveBeenCalledWith(
+      "tok-2",
+      "android",
+      "Birthday",
+      "Grandma's birthday is tomorrow!",
+    );
   });
 
   it("skips notification when category is disabled", async () => {

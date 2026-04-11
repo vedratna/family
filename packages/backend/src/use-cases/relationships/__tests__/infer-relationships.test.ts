@@ -38,9 +38,7 @@ describe("InferRelationships", () => {
       const child = "amit";
 
       // Existing: grandma is parent of rajesh
-      const existing = [
-        makeRel({ personAId: grandma, personBId: parent, type: "parent-child" }),
-      ];
+      const existing = [makeRel({ personAId: grandma, personBId: parent, type: "parent-child" })];
 
       const repo = mockRelationshipRepo(existing);
       const useCase = new InferRelationships(repo);
@@ -64,9 +62,7 @@ describe("InferRelationships", () => {
       const child = "amit";
 
       // Existing: rajesh and suresh are siblings
-      const existing = [
-        makeRel({ personAId: parent, personBId: uncle, type: "sibling" }),
-      ];
+      const existing = [makeRel({ personAId: parent, personBId: uncle, type: "sibling" })];
 
       const repo = mockRelationshipRepo(existing);
       const useCase = new InferRelationships(repo);
@@ -142,9 +138,7 @@ describe("InferRelationships", () => {
       const priya = "priya";
 
       // Existing: grandma is parent of rajesh
-      const existing = [
-        makeRel({ personAId: grandma, personBId: rajesh, type: "parent-child" }),
-      ];
+      const existing = [makeRel({ personAId: grandma, personBId: rajesh, type: "parent-child" })];
 
       const repo = mockRelationshipRepo(existing);
       const useCase = new InferRelationships(repo);
@@ -170,9 +164,7 @@ describe("InferRelationships", () => {
       const sunita = "sunita";
 
       // Existing: rajesh and sunita are siblings
-      const existing = [
-        makeRel({ personAId: rajesh, personBId: sunita, type: "sibling" }),
-      ];
+      const existing = [makeRel({ personAId: rajesh, personBId: sunita, type: "sibling" })];
 
       const repo = mockRelationshipRepo(existing);
       const useCase = new InferRelationships(repo);
@@ -182,9 +174,7 @@ describe("InferRelationships", () => {
 
       const suggestions = await useCase.execute("fam-1", newRel);
 
-      const sibInLaw = suggestions.find(
-        (s) => s.personAId === sunita && s.personBId === priya,
-      );
+      const sibInLaw = suggestions.find((s) => s.personAId === sunita && s.personBId === priya);
       expect(sibInLaw).toBeDefined();
       expect(sibInLaw).toMatchObject({
         type: "in-law",
@@ -213,9 +203,13 @@ describe("InferRelationships", () => {
       const suggestions = await useCase.execute("fam-1", newRel);
 
       // grandma -> priya (parent-in-law)
-      expect(suggestions.find((s) => s.personAId === grandma && s.personBId === priya)).toBeDefined();
+      expect(
+        suggestions.find((s) => s.personAId === grandma && s.personBId === priya),
+      ).toBeDefined();
       // priya-mom -> rajesh (parent-in-law)
-      expect(suggestions.find((s) => s.personAId === priyaMom && s.personBId === rajesh)).toBeDefined();
+      expect(
+        suggestions.find((s) => s.personAId === priyaMom && s.personBId === rajesh),
+      ).toBeDefined();
     });
   });
 

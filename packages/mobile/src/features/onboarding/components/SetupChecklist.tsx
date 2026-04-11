@@ -48,7 +48,9 @@ export function SetupChecklist({ items, onDismiss }: SetupChecklistProps) {
           <Text
             style={[
               styles.checkbox,
-              { color: item.completed ? theme.colors.semantic.success : theme.colors.text.tertiary },
+              {
+                color: item.completed ? theme.colors.semantic.success : theme.colors.text.tertiary,
+              },
             ]}
           >
             {item.completed ? "\u2611" : "\u2610"}

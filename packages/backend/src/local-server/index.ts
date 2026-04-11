@@ -12,10 +12,7 @@ import { RegisterWithPhone } from "../use-cases/auth";
 const PORT = Number(process.env["PORT"] ?? "4000");
 
 // Read the same schema used by AppSync
-const typeDefs = readFileSync(
-  resolve(__dirname, "../../../infra/graphql/schema.graphql"),
-  "utf-8",
-);
+const typeDefs = readFileSync(resolve(__dirname, "../../../infra/graphql/schema.graphql"), "utf-8");
 
 // Instantiate repositories (using DynamoDB Local)
 const userRepo = new DynamoUserRepository();

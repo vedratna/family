@@ -14,7 +14,8 @@ export function EventCard({ title, date, daysAway, eventType, onPress }: EventCa
   const theme = useTheme();
 
   const emoji = eventType === "birthday" ? "\uD83C\uDF82" : "\uD83D\uDCC5";
-  const daysText = daysAway === 0 ? "Today!" : daysAway === 1 ? "Tomorrow" : `${String(daysAway)} days away`;
+  const daysText =
+    daysAway === 0 ? "Today!" : daysAway === 1 ? "Tomorrow" : `${String(daysAway)} days away`;
 
   return (
     <Pressable

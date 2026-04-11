@@ -170,14 +170,14 @@ AppSync                    Handler                     Use Case                R
 
 Each layer has strict rules about what it can import. Violations should be caught by ESLint boundary rules (see [ESLint Boundary Enforcement](#eslint-boundary-enforcement)).
 
-| Layer | Can Import | CANNOT Import | Rationale |
-|-------|-----------|---------------|-----------|
-| **Domain** (`domain/`) | `@family-app/shared` types | Use cases, repositories, handlers, AWS SDK | Domain is pure; no infrastructure dependencies |
-| **Repository Interfaces** (`repositories/interfaces/`) | `@family-app/shared` types, domain errors | Use cases, handlers, DynamoDB client, AWS SDK | Interfaces define contracts, not implementations |
-| **Use Cases** (`use-cases/`) | Repository interfaces, domain errors, `@family-app/shared` types/validation, `shared/` utilities | Handlers, DynamoDB client, AWS SDK, concrete repos | Use cases depend on abstractions, never concrete infra |
-| **Handlers** (`handlers/`) | Use cases, concrete repositories, domain errors | Nothing is off-limits (outermost layer) | Handlers are the composition root; they wire everything together |
-| **Repository Implementations** (`repositories/dynamodb/`) | Repository interfaces, `@family-app/shared` types, AWS SDK, domain errors | Use cases, handlers | Implements interfaces; knows about DynamoDB but not about business logic |
-| **Shared Utilities** (`shared/`) | `@family-app/shared` types, domain errors | Use cases, handlers, concrete repos | Cross-cutting concerns (permissions, etc.) |
+| Layer                                                     | Can Import                                                                                       | CANNOT Import                                      | Rationale                                                                |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Domain** (`domain/`)                                    | `@family-app/shared` types                                                                       | Use cases, repositories, handlers, AWS SDK         | Domain is pure; no infrastructure dependencies                           |
+| **Repository Interfaces** (`repositories/interfaces/`)    | `@family-app/shared` types, domain errors                                                        | Use cases, handlers, DynamoDB client, AWS SDK      | Interfaces define contracts, not implementations                         |
+| **Use Cases** (`use-cases/`)                              | Repository interfaces, domain errors, `@family-app/shared` types/validation, `shared/` utilities | Handlers, DynamoDB client, AWS SDK, concrete repos | Use cases depend on abstractions, never concrete infra                   |
+| **Handlers** (`handlers/`)                                | Use cases, concrete repositories, domain errors                                                  | Nothing is off-limits (outermost layer)            | Handlers are the composition root; they wire everything together         |
+| **Repository Implementations** (`repositories/dynamodb/`) | Repository interfaces, `@family-app/shared` types, AWS SDK, domain errors                        | Use cases, handlers                                | Implements interfaces; knows about DynamoDB but not about business logic |
+| **Shared Utilities** (`shared/`)                          | `@family-app/shared` types, domain errors                                                        | Use cases, handlers, concrete repos                | Cross-cutting concerns (permissions, etc.)                               |
 
 ### The Golden Rule
 
@@ -277,16 +277,16 @@ export abstract class DomainError extends Error {
 
 ### Error Inventory
 
-| Error Class | Code | Status | File | When Thrown |
-|-------------|------|--------|------|------------|
-| `DomainError` | (abstract) | (abstract) | `domain/errors/base.ts` | Never directly -- base class only |
-| `InvalidOtpError` | `INVALID_OTP` | 401 | `domain/errors/auth.ts` | OTP verification fails or OTP is expired |
-| `UserAlreadyExistsError` | `USER_ALREADY_EXISTS` | 409 | `domain/errors/auth.ts` | Registration with a phone number already in use |
-| `UserNotFoundError` | `USER_NOT_FOUND` | 404 | `domain/errors/auth.ts` | Login or lookup for a non-existent user |
-| `PermissionDeniedError` | `PERMISSION_DENIED` | 403 | `domain/errors/common.ts` | `requireRole()` check fails, or action not allowed for role |
-| `NotFoundError` | `NOT_FOUND` | 404 | `domain/errors/common.ts` | Generic entity lookup failure (family, post, event, etc.) |
-| `ValidationError` | `VALIDATION_ERROR` | 400 | `domain/errors/common.ts` | Zod schema validation fails, or business rule violated |
-| `ActivationGateError` | `ACTIVATION_GATE` | 403 | `domain/errors/common.ts` | Content creation attempted before family has 2+ active members |
+| Error Class              | Code                  | Status     | File                      | When Thrown                                                    |
+| ------------------------ | --------------------- | ---------- | ------------------------- | -------------------------------------------------------------- |
+| `DomainError`            | (abstract)            | (abstract) | `domain/errors/base.ts`   | Never directly -- base class only                              |
+| `InvalidOtpError`        | `INVALID_OTP`         | 401        | `domain/errors/auth.ts`   | OTP verification fails or OTP is expired                       |
+| `UserAlreadyExistsError` | `USER_ALREADY_EXISTS` | 409        | `domain/errors/auth.ts`   | Registration with a phone number already in use                |
+| `UserNotFoundError`      | `USER_NOT_FOUND`      | 404        | `domain/errors/auth.ts`   | Login or lookup for a non-existent user                        |
+| `PermissionDeniedError`  | `PERMISSION_DENIED`   | 403        | `domain/errors/common.ts` | `requireRole()` check fails, or action not allowed for role    |
+| `NotFoundError`          | `NOT_FOUND`           | 404        | `domain/errors/common.ts` | Generic entity lookup failure (family, post, event, etc.)      |
+| `ValidationError`        | `VALIDATION_ERROR`    | 400        | `domain/errors/common.ts` | Zod schema validation fails, or business rule violated         |
+| `ActivationGateError`    | `ACTIVATION_GATE`     | 403        | `domain/errors/common.ts` | Content creation attempted before family has 2+ active members |
 
 ### Error Handling Flow
 
@@ -393,19 +393,19 @@ export class CreateEvent {
 
 ### Role Requirement Matrix
 
-| Action | Minimum Role | Notes |
-|--------|-------------|-------|
-| View family content | `viewer` | Default role for new members |
-| Create/edit posts | `editor` | |
-| Create/edit events | `editor` | |
-| Create/edit chores | `editor` | |
-| RSVP to events | `viewer` | All members can respond |
-| Invite members | `admin` | |
-| Remove members | `admin` | Cannot remove owner |
-| Change member roles | `admin` | Can only set roles up to own level |
-| Edit family settings | `admin` | |
-| Transfer ownership | `owner` | Only current owner |
-| Delete family | `owner` | |
+| Action               | Minimum Role | Notes                              |
+| -------------------- | ------------ | ---------------------------------- |
+| View family content  | `viewer`     | Default role for new members       |
+| Create/edit posts    | `editor`     |                                    |
+| Create/edit events   | `editor`     |                                    |
+| Create/edit chores   | `editor`     |                                    |
+| RSVP to events       | `viewer`     | All members can respond            |
+| Invite members       | `admin`      |                                    |
+| Remove members       | `admin`      | Cannot remove owner                |
+| Change member roles  | `admin`      | Can only set roles up to own level |
+| Edit family settings | `admin`      |                                    |
+| Transfer ownership   | `owner`      | Only current owner                 |
+| Delete family        | `owner`      |                                    |
 
 ---
 
@@ -413,24 +413,24 @@ export class CreateEvent {
 
 All 16 repository interfaces live in `packages/backend/src/repositories/interfaces/`. They define the contracts that use cases depend on.
 
-| Interface | File | Purpose |
-|-----------|------|---------|
-| `IUserRepository` | `user-repo.ts` | User CRUD, lookup by phone/cognitoSub |
-| `IFamilyRepository` | `family-repo.ts` | Family CRUD, metadata |
-| `IPersonRepository` | `person-repo.ts` | Person records (app users + non-app family members) |
-| `IMembershipRepository` | `membership-repo.ts` | User-to-family membership with role |
-| `IInvitationRepository` | `invitation-repo.ts` | Pending invitations by phone number |
-| `IRelationshipRepository` | `relationship-repo.ts` | Parent-child, spouse, sibling links between persons |
-| `IPostRepository` | `post-repo.ts` | Feed posts with pagination |
-| `ICommentRepository` | `post-repo.ts` | Comments on posts |
-| `IReactionRepository` | `post-repo.ts` | Emoji reactions on posts |
-| `IEventRepository` | `event-repo.ts` | Calendar events, recurring events |
-| `IEventRSVPRepository` | `event-repo.ts` | RSVP responses to events |
-| `INotificationPreferenceRepository` | `notification-repo.ts` | Per-family, per-category notification preferences |
-| `IDeviceTokenRepository` | `notification-repo.ts` | Push notification device tokens |
-| `IMediaRepository` | `media-repo.ts` | Media metadata (photos, videos) |
-| `IStorageService` | `media-repo.ts` | Presigned URL generation (S3 abstraction) |
-| `IChoreRepository` | `chore-repo.ts` | Household chore definitions and assignments |
+| Interface                           | File                   | Purpose                                             |
+| ----------------------------------- | ---------------------- | --------------------------------------------------- |
+| `IUserRepository`                   | `user-repo.ts`         | User CRUD, lookup by phone/cognitoSub               |
+| `IFamilyRepository`                 | `family-repo.ts`       | Family CRUD, metadata                               |
+| `IPersonRepository`                 | `person-repo.ts`       | Person records (app users + non-app family members) |
+| `IMembershipRepository`             | `membership-repo.ts`   | User-to-family membership with role                 |
+| `IInvitationRepository`             | `invitation-repo.ts`   | Pending invitations by phone number                 |
+| `IRelationshipRepository`           | `relationship-repo.ts` | Parent-child, spouse, sibling links between persons |
+| `IPostRepository`                   | `post-repo.ts`         | Feed posts with pagination                          |
+| `ICommentRepository`                | `post-repo.ts`         | Comments on posts                                   |
+| `IReactionRepository`               | `post-repo.ts`         | Emoji reactions on posts                            |
+| `IEventRepository`                  | `event-repo.ts`        | Calendar events, recurring events                   |
+| `IEventRSVPRepository`              | `event-repo.ts`        | RSVP responses to events                            |
+| `INotificationPreferenceRepository` | `notification-repo.ts` | Per-family, per-category notification preferences   |
+| `IDeviceTokenRepository`            | `notification-repo.ts` | Push notification device tokens                     |
+| `IMediaRepository`                  | `media-repo.ts`        | Media metadata (photos, videos)                     |
+| `IStorageService`                   | `media-repo.ts`        | Presigned URL generation (S3 abstraction)           |
+| `IChoreRepository`                  | `chore-repo.ts`        | Household chore definitions and assignments         |
 
 ### Interface Design Conventions
 
@@ -472,17 +472,17 @@ All data lives in one DynamoDB table with two Global Secondary Indexes (GSIs). K
 
 ### Access Patterns
 
-| Access Pattern | Key Condition | Index |
-|---------------|--------------|-------|
-| Get user by ID | `PK = USER#<id>, SK = PROFILE` | Table |
-| Get user by phone | `GSI1PK = PHONE#<phone>` | GSI1 |
-| List family members | `PK = FAMILY#<id>, SK begins_with MEMBER#` | Table |
+| Access Pattern                   | Key Condition                                      | Index |
+| -------------------------------- | -------------------------------------------------- | ----- |
+| Get user by ID                   | `PK = USER#<id>, SK = PROFILE`                     | Table |
+| Get user by phone                | `GSI1PK = PHONE#<phone>`                           | GSI1  |
+| List family members              | `PK = FAMILY#<id>, SK begins_with MEMBER#`         | Table |
 | List family posts (newest first) | `PK = FAMILY#<id>, SK begins_with POST#` (reverse) | Table |
-| List family events by date | `PK = FAMILY#<id>, SK begins_with EVENT#` | Table |
-| List comments on a post | `PK = POST#<id>, SK begins_with COMMENT#` | Table |
-| Get all families for a user | `GSI1PK = USER#<uid>` | GSI1 |
-| Reverse relationship lookup | `GSI1PK = RELP#<personB>#<personA>` | GSI1 |
-| Events by type | `GSI2PK = EVTYPE#<famId>#<type>` | GSI2 |
+| List family events by date       | `PK = FAMILY#<id>, SK begins_with EVENT#`          | Table |
+| List comments on a post          | `PK = POST#<id>, SK begins_with COMMENT#`          | Table |
+| Get all families for a user      | `GSI1PK = USER#<uid>`                              | GSI1  |
+| Reverse relationship lookup      | `GSI1PK = RELP#<personB>#<personA>`                | GSI1  |
+| Events by type                   | `GSI2PK = EVTYPE#<famId>#<type>`                   | GSI2  |
 
 ### Key Builder Usage
 
@@ -492,8 +492,8 @@ All key construction goes through the centralized `keys` object. Never build key
 import { keys } from "./keys";
 
 // Correct
-const pk = keys.family.pk(familyId);         // "FAMILY#abc-123"
-const sk = keys.family.sk.member(personId);  // "MEMBER#def-456"
+const pk = keys.family.pk(familyId); // "FAMILY#abc-123"
+const sk = keys.family.sk.member(personId); // "MEMBER#def-456"
 
 // WRONG -- never do this
 const pk = `FAMILY#${familyId}`;
@@ -516,7 +516,7 @@ import { createEventSchema } from "@family-app/shared";
 
 export class CreateEvent {
   async execute(input: unknown): Promise<Event> {
-    const validated = createEventSchema.parse(input);  // Throws ZodError
+    const validated = createEventSchema.parse(input); // Throws ZodError
     // ... use validated data with full type safety
   }
 }
@@ -532,13 +532,13 @@ Layer boundary rules should be enforced at build time via ESLint. Cross-referenc
 
 ### Enforced Rules
 
-| Rule | Enforces |
-|------|----------|
-| `use-cases/` cannot import from `repositories/dynamodb/` | Use cases depend on interfaces, not implementations |
-| `use-cases/` cannot import from `handlers/` | No circular dependency between application and infrastructure |
-| `domain/` cannot import from `use-cases/`, `handlers/`, or `repositories/dynamodb/` | Domain stays pure |
-| `repositories/interfaces/` cannot import from `repositories/dynamodb/` | Interface definitions stay abstract |
-| No `aws-sdk` imports in `use-cases/` or `domain/` | Infrastructure concerns stay in infrastructure layer |
+| Rule                                                                                | Enforces                                                      |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `use-cases/` cannot import from `repositories/dynamodb/`                            | Use cases depend on interfaces, not implementations           |
+| `use-cases/` cannot import from `handlers/`                                         | No circular dependency between application and infrastructure |
+| `domain/` cannot import from `use-cases/`, `handlers/`, or `repositories/dynamodb/` | Domain stays pure                                             |
+| `repositories/interfaces/` cannot import from `repositories/dynamodb/`              | Interface definitions stay abstract                           |
+| No `aws-sdk` imports in `use-cases/` or `domain/`                                   | Infrastructure concerns stay in infrastructure layer          |
 
 These rules ensure that the architecture diagram above is not just a suggestion but a compiler-enforced reality. Violations fail CI.
 

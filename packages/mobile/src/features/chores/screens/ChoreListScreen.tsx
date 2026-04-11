@@ -37,7 +37,9 @@ export function ChoreListScreen({
           return (
             <Pressable
               style={[styles.choreCard, { backgroundColor: theme.colors.background.card }]}
-              onPress={() => { onChorePress(item.id); }}
+              onPress={() => {
+                onChorePress(item.id);
+              }}
               testID={`chore-${item.id}`}
             >
               <Pressable
@@ -47,9 +49,7 @@ export function ChoreListScreen({
                     borderColor: isCompleted
                       ? theme.colors.semantic.success
                       : theme.colors.border.primary,
-                    backgroundColor: isCompleted
-                      ? theme.colors.semantic.success
-                      : "transparent",
+                    backgroundColor: isCompleted ? theme.colors.semantic.success : "transparent",
                   },
                 ]}
                 onPress={() => {
@@ -105,7 +105,14 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   list: { padding: 16, gap: 8 },
   choreCard: { flexDirection: "row", borderRadius: 12, padding: 14, gap: 14, alignItems: "center" },
-  checkbox: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  checkbox: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   checkmark: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
   choreInfo: { flex: 1, gap: 2 },
   choreTitle: { fontSize: 16, fontWeight: "500" },

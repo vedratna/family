@@ -73,14 +73,14 @@ See [AWS Bootstrap Guide](docs/ops/aws-bootstrap.md) and [Credentials Checklist]
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Mobile | React Native (Expo) |
-| API | AWS AppSync (GraphQL) |
-| Auth | AWS Cognito |
-| Database | DynamoDB (single-table) |
-| Media | S3 + presigned URLs |
-| Notifications | SNS + EventBridge |
-| Infra | AWS CDK (TypeScript) |
-| Monorepo | Turborepo |
-| Testing | Vitest (121 tests) |
+| Layer         | Technology              |
+| ------------- | ----------------------- |
+| Mobile        | React Native (Expo)     |
+| API           | AWS AppSync (GraphQL)   |
+| Auth          | AWS Cognito             |
+| Database      | DynamoDB (single-table) |
+| Media         | S3 + presigned URLs     |
+| Notifications | SNS + EventBridge       |
+| Infra         | AWS CDK (TypeScript)    |
+| Monorepo      | Turborepo               |
+| Testing       | Vitest (121 tests)      |

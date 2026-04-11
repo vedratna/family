@@ -2,11 +2,11 @@
 
 ## Build Profiles
 
-| Profile | Use | Distribution | Build Time |
-|---------|-----|-------------|------------|
-| `development` | Local dev with dev client | Internal | ~10 min |
-| `preview` | QA testing | Internal (TestFlight / internal track) | ~15 min |
-| `production` | App Store / Play Store | Public | ~15 min |
+| Profile       | Use                       | Distribution                           | Build Time |
+| ------------- | ------------------------- | -------------------------------------- | ---------- |
+| `development` | Local dev with dev client | Internal                               | ~10 min    |
+| `preview`     | QA testing                | Internal (TestFlight / internal track) | ~15 min    |
+| `production`  | App Store / Play Store    | Public                                 | ~15 min    |
 
 ## Commands
 
@@ -34,13 +34,14 @@ eas submit --platform android
 
 ## Environment Variables per Profile
 
-| Variable | development | preview | production |
-|----------|------------|---------|------------|
-| `MOCK_MODE` | `true` | `false` | `false` |
-| `STAGE` | `dev` | `dev` | `prod` |
-| `API_URL` | localhost | dev AppSync | prod AppSync |
+| Variable    | development | preview     | production   |
+| ----------- | ----------- | ----------- | ------------ |
+| `MOCK_MODE` | `true`      | `false`     | `false`      |
+| `STAGE`     | `dev`       | `dev`       | `prod`       |
+| `API_URL`   | localhost   | dev AppSync | prod AppSync |
 
 API_URL for cloud environments is set via EAS secrets:
+
 ```bash
 eas secret:create --scope project --name API_URL --value <appsync-url>
 ```

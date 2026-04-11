@@ -33,9 +33,7 @@ export function InviteLandingScreen({
       <Text style={[styles.title, { color: theme.colors.text.primary }]}>
         {inviterName} invited you to
       </Text>
-      <Text style={[styles.familyName, { color: theme.colors.accent.primary }]}>
-        {familyName}!
-      </Text>
+      <Text style={[styles.familyName, { color: theme.colors.accent.primary }]}>{familyName}!</Text>
 
       <Text style={[styles.relationship, { color: theme.colors.text.secondary }]}>
         You're joining as: {inviterName}'s {relationship}
@@ -83,10 +81,7 @@ export function InviteLandingScreen({
         </Text>
       </Pressable>
 
-      <Text
-        style={[styles.loginLink, { color: theme.colors.text.secondary }]}
-        onPress={onLogin}
-      >
+      <Text style={[styles.loginLink, { color: theme.colors.text.secondary }]} onPress={onLogin}>
         Already on FamilyApp? <Text style={{ color: theme.colors.accent.primary }}>Log in</Text>
       </Text>
     </View>

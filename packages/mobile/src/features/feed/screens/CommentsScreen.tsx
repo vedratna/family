@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  FlatList,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 
 import { useTheme } from "../../../shared/theme";
 
@@ -83,7 +92,15 @@ export function CommentsScreen({
         }
       />
 
-      <View style={[styles.inputBar, { backgroundColor: theme.colors.background.card, borderTopColor: theme.colors.border.primary }]}>
+      <View
+        style={[
+          styles.inputBar,
+          {
+            backgroundColor: theme.colors.background.card,
+            borderTopColor: theme.colors.border.primary,
+          },
+        ]}
+      >
         <TextInput
           style={[styles.input, { color: theme.colors.text.primary }]}
           value={commentText}
@@ -123,7 +140,13 @@ const styles = StyleSheet.create({
   previewText: { fontSize: 14 },
   list: { padding: 16, gap: 16 },
   comment: { flexDirection: "row", gap: 10 },
-  commentAvatar: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  commentAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   commentAvatarText: { fontSize: 14, fontWeight: "600" },
   commentBody: { flex: 1, gap: 2 },
   commentHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
@@ -131,7 +154,14 @@ const styles = StyleSheet.create({
   commentTime: { fontSize: 12 },
   commentText: { fontSize: 15, lineHeight: 22 },
   empty: { textAlign: "center", marginTop: 32, fontSize: 14 },
-  inputBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, gap: 12 },
+  inputBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    gap: 12,
+  },
   input: { flex: 1, fontSize: 15, paddingVertical: 8 },
   sendText: { fontSize: 15, fontWeight: "600" },
 });

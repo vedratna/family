@@ -49,14 +49,18 @@ export function PendingSuggestionsScreen({
             <View style={styles.actions}>
               <Pressable
                 style={[styles.confirmButton, { backgroundColor: theme.colors.semantic.success }]}
-                onPress={() => { onConfirm(item.personAId, item.personBId); }}
+                onPress={() => {
+                  onConfirm(item.personAId, item.personBId);
+                }}
                 testID={`confirm-${item.personAId}-${item.personBId}`}
               >
                 <Text style={styles.actionText}>Confirm</Text>
               </Pressable>
               <Pressable
                 style={[styles.rejectButton, { borderColor: theme.colors.semantic.error }]}
-                onPress={() => { onReject(item.personAId, item.personBId); }}
+                onPress={() => {
+                  onReject(item.personAId, item.personBId);
+                }}
                 testID={`reject-${item.personAId}-${item.personBId}`}
               >
                 <Text style={[styles.rejectText, { color: theme.colors.semantic.error }]}>

@@ -8,7 +8,12 @@ interface EditEventInput {
   familyId: string;
   eventId: string;
   date: string;
-  updates: Partial<Pick<FamilyEvent, "title" | "description" | "eventType" | "startDate" | "startTime" | "location">>;
+  updates: Partial<
+    Pick<
+      FamilyEvent,
+      "title" | "description" | "eventType" | "startDate" | "startTime" | "location"
+    >
+  >;
   requesterRole: Role;
 }
 
@@ -30,7 +35,12 @@ export class EditEvent {
 export class DeleteEvent {
   constructor(private readonly eventRepo: IEventRepository) {}
 
-  async execute(familyId: string, date: string, eventId: string, requesterRole: Role): Promise<void> {
+  async execute(
+    familyId: string,
+    date: string,
+    eventId: string,
+    requesterRole: Role,
+  ): Promise<void> {
     requireRole(requesterRole, "editor", "delete events");
 
     const existing = await this.eventRepo.getById(familyId, date, eventId);

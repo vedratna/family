@@ -42,8 +42,6 @@ describe("LoginWithPhone", () => {
   it("throws UserNotFoundError when cognito sub not found", async () => {
     vi.mocked(userRepo.getByCognitoSub).mockResolvedValue(undefined);
 
-    await expect(
-      useCase.execute({ cognitoSub: "nonexistent" }),
-    ).rejects.toThrow(UserNotFoundError);
+    await expect(useCase.execute({ cognitoSub: "nonexistent" })).rejects.toThrow(UserNotFoundError);
   });
 });

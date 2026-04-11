@@ -10,9 +10,11 @@ scaffold   infra    types+db   features   docs+ops
 ```
 
 ### PR #1: Project Scaffold + Quality Infrastructure
+
 **Branch:** `feat/scaffold`
 
 Contains:
+
 - Turborepo config (`turbo.json`, root `package.json`)
 - TypeScript strict config (`tsconfig.base.json`)
 - ESLint config (`eslint.config.mjs`, boundaries plugin)
@@ -26,10 +28,12 @@ Contains:
 **Validates:** CI pipeline runs, all 7 gates pass on empty project.
 
 ### PR #2: AWS Infrastructure (CDK)
+
 **Branch:** `feat/infra`
 **Depends on:** PR #1
 
 Contains:
+
 - 6 CDK stacks (auth, database, storage, api, notification, scheduler)
 - GraphQL schema
 - CDK entry point (`app.ts`)
@@ -37,10 +41,12 @@ Contains:
 **Validates:** `cdk synth` succeeds in CI.
 
 ### PR #3: Domain Types, DynamoDB Design, Shared Package
+
 **Branch:** `feat/domain`
 **Depends on:** PR #1
 
 Contains:
+
 - All shared types (10 type files)
 - All Zod validation schemas (6 files)
 - DynamoDB access patterns documentation
@@ -51,10 +57,12 @@ Contains:
 **Validates:** Type check + key builder tests pass.
 
 ### PR #4: Backend + Mobile Features
+
 **Branch:** `feat/features`
 **Depends on:** PR #3
 
 Contains:
+
 - All use cases (auth, family, relationships, tree, feed, calendar, notifications, media, chores)
 - All repository interfaces
 - DynamoDB repository implementation (user-repo)
@@ -65,10 +73,12 @@ Contains:
 **Validates:** All 121 tests pass. App starts with mock data.
 
 ### PR #5: Documentation + Deployment
+
 **Branch:** `feat/docs-ops`
 **Depends on:** PR #1
 
 Contains:
+
 - Architecture docs (7 files)
 - Quality standards
 - User guide (7 files)

@@ -50,7 +50,8 @@ export function WelcomeScreen({
           onPress={onLoginPress}
           testID="login-link"
         >
-          Already have an account? <Text style={{ color: theme.colors.accent.primary }}>Log in</Text>
+          Already have an account?{" "}
+          <Text style={{ color: theme.colors.accent.primary }}>Log in</Text>
         </Text>
       </View>
     </View>

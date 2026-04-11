@@ -77,8 +77,8 @@ describe("DeleteEvent", () => {
     const repo = mockEventRepo();
     const useCase = new DeleteEvent(repo);
 
-    await expect(
-      useCase.execute("fam-1", "2026-04-12", "evt-1", "viewer"),
-    ).rejects.toThrow(PermissionDeniedError);
+    await expect(useCase.execute("fam-1", "2026-04-12", "evt-1", "viewer")).rejects.toThrow(
+      PermissionDeniedError,
+    );
   });
 });

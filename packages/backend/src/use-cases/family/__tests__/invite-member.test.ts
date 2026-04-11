@@ -11,14 +11,31 @@ function mockFamilyRepo(): IFamilyRepository {
   return { create: vi.fn(), getById: vi.fn(), updateTheme: vi.fn(), delete: vi.fn() };
 }
 function mockMembershipRepo(): IMembershipRepository {
-  return { create: vi.fn(), getByFamilyId: vi.fn(), getByUserId: vi.fn(), getByFamilyAndPerson: vi.fn(), updateRole: vi.fn(), delete: vi.fn(), countActiveMembers: vi.fn() };
+  return {
+    create: vi.fn(),
+    getByFamilyId: vi.fn(),
+    getByUserId: vi.fn(),
+    getByFamilyAndPerson: vi.fn(),
+    updateRole: vi.fn(),
+    delete: vi.fn(),
+    countActiveMembers: vi.fn(),
+  };
 }
 function mockInvitationRepo(): IInvitationRepository {
-  return { create: vi.fn(), getByFamilyAndPhone: vi.fn(), getByPhone: vi.fn(), updateStatus: vi.fn() };
+  return {
+    create: vi.fn(),
+    getByFamilyAndPhone: vi.fn(),
+    getByPhone: vi.fn(),
+    updateStatus: vi.fn(),
+  };
 }
 
 const family: Family = {
-  id: "fam-1", name: "Sharma", createdBy: "u1", themeName: "teal", createdAt: "2026-01-01T00:00:00Z",
+  id: "fam-1",
+  name: "Sharma",
+  createdBy: "u1",
+  themeName: "teal",
+  createdAt: "2026-01-01T00:00:00Z",
 };
 
 describe("InviteMember", () => {

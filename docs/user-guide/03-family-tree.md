@@ -22,6 +22,7 @@ You don't draw the tree — **it generates itself** from the relationships you d
 ## Adding Relationships
 
 To define a relationship between two people:
+
 1. Select **Person A** (e.g., Grandma)
 2. Enter what **A is to B** (e.g., "Mother")
 3. Select **Person B** (e.g., Rajesh)
@@ -44,6 +45,7 @@ System suggests:
 ```
 
 **Inference rules:**
+
 - Parent + child's spouse → Parent-in-law
 - Parent's parent → Grandparent
 - Parent's sibling → Uncle/Aunt
@@ -55,6 +57,7 @@ Suggestions appear as **pending** — an Admin must confirm or dismiss them. The
 ## Non-App Members
 
 You can add people to the tree who don't have the app installed. This is useful for:
+
 - Deceased ancestors (preserving family history)
 - Elderly relatives not comfortable with technology
 - Children too young for their own account

@@ -26,6 +26,7 @@ aws configure
 ```
 
 Verify:
+
 ```bash
 aws sts get-caller-identity
 # Should show your account ID
@@ -41,6 +42,7 @@ npx cdk bootstrap aws://<ACCOUNT_ID>/ap-south-1
 ```
 
 Verify:
+
 ```bash
 npx cdk synth --context stage=dev
 # Should output CloudFormation templates without errors
@@ -57,6 +59,7 @@ npx cdk deploy --all --context stage=dev
 ```
 
 This creates:
+
 - Cognito User Pool
 - DynamoDB table (`family-dev`)
 - S3 media bucket
@@ -68,15 +71,16 @@ This creates:
 
 Go to GitHub → Repository → Settings → Secrets → Actions:
 
-| Secret | Value |
-|--------|-------|
-| `AWS_ACCESS_KEY_ID` | From Step 1 |
-| `AWS_SECRET_ACCESS_KEY` | From Step 1 |
-| `AWS_REGION` | `ap-south-1` |
+| Secret                  | Value        |
+| ----------------------- | ------------ |
+| `AWS_ACCESS_KEY_ID`     | From Step 1  |
+| `AWS_SECRET_ACCESS_KEY` | From Step 1  |
+| `AWS_REGION`            | `ap-south-1` |
 
 ## Step 6: Verify Auto-Deploy
 
 Push a commit to `main`. The deploy-dev workflow should:
+
 1. Run CDK diff
 2. Deploy all stacks
 3. Run smoke test
@@ -85,12 +89,12 @@ Check GitHub Actions tab for results.
 
 ## Cost Estimate (Dev Environment)
 
-| Service | Estimated Monthly Cost |
-|---------|----------------------|
-| DynamoDB (on-demand) | ~$0.01 (minimal traffic) |
-| Lambda | ~$0 (free tier: 1M requests) |
-| S3 | ~$0.01 (minimal storage) |
-| AppSync | ~$0 (free tier: 250K queries) |
-| Cognito | ~$0 (free tier: 50K MAU) |
-| SNS | ~$0 (free tier: 1M publishes) |
-| **Total** | **< $1/month** |
+| Service              | Estimated Monthly Cost        |
+| -------------------- | ----------------------------- |
+| DynamoDB (on-demand) | ~$0.01 (minimal traffic)      |
+| Lambda               | ~$0 (free tier: 1M requests)  |
+| S3                   | ~$0.01 (minimal storage)      |
+| AppSync              | ~$0 (free tier: 250K queries) |
+| Cognito              | ~$0 (free tier: 50K MAU)      |
+| SNS                  | ~$0 (free tier: 1M publishes) |
+| **Total**            | **< $1/month**                |

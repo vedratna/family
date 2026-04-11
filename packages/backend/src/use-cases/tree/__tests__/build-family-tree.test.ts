@@ -11,11 +11,7 @@ function makePerson(id: string, name: string, userId?: string): Person {
   return person;
 }
 
-function makeRel(
-  personAId: string,
-  personBId: string,
-  type: Relationship["type"],
-): Relationship {
+function makeRel(personAId: string, personBId: string, type: Relationship["type"]): Relationship {
   return {
     id: crypto.randomUUID(),
     familyId: "fam-1",
@@ -73,10 +69,7 @@ describe("buildTreeFromData", () => {
       makePerson("priya", "Priya"),
       makePerson("amit", "Amit"),
     ];
-    const rels = [
-      makeRel("rajesh", "priya", "spouse"),
-      makeRel("rajesh", "amit", "parent-child"),
-    ];
+    const rels = [makeRel("rajesh", "priya", "spouse"), makeRel("rajesh", "amit", "parent-child")];
 
     const tree = buildTreeFromData(persons, rels);
 
@@ -117,10 +110,7 @@ describe("buildTreeFromData", () => {
   });
 
   it("handles person with no relationships (isolated node)", () => {
-    const persons = [
-      makePerson("rajesh", "Rajesh"),
-      makePerson("isolated", "Isolated Person"),
-    ];
+    const persons = [makePerson("rajesh", "Rajesh"), makePerson("isolated", "Isolated Person")];
     const rels: Relationship[] = [];
 
     const tree = buildTreeFromData(persons, rels);

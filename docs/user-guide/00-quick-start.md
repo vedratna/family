@@ -14,11 +14,13 @@ Welcome to FamilyApp — your family's private space to share moments, plan even
 ### Step 1: Create Your Account
 
 Open FamilyApp and choose how to sign up:
+
 - **Phone number** (recommended) — Enter your phone, receive a 6-digit code, done
 - **Google** — Tap "Continue with Google"
 - **Apple** — Tap "Continue with Apple"
 
 Then set your profile:
+
 - Your **display name** (what family members will see)
 - **Profile photo** (optional — we'll use a friendly avatar until you add one)
 - **Date of birth** (optional — helps us remind your family about your birthday!)
@@ -37,6 +39,7 @@ Then set your profile:
 ### Step 3: Invite Your Family
 
 Add family members by entering:
+
 - Their **name**
 - Their **phone number**
 - Their **relationship to you** (e.g., Husband, Mother, Son)
@@ -50,6 +53,7 @@ They'll receive an SMS with a link to join. You can start with just one person a
 ## What Happens Next?
 
 Once your first family member joins, the app unlocks and you can:
+
 - **Share moments** — Post photos, videos, and updates to your family feed
 - **Plan events** — Add birthdays, anniversaries, and gatherings to the shared calendar
 - **See your tree** — Your family tree builds itself from the relationships you define
@@ -58,6 +62,7 @@ Once your first family member joins, the app unlocks and you can:
 ### While You Wait for Members to Join
 
 You can still:
+
 - Add **events** to the calendar (e.g., upcoming birthdays)
 - Add **family members to the tree** (even those without the app)
 - Explore the app
@@ -199,20 +204,20 @@ Feed (unlocked!) — Start sharing!
 
 When members join, they're assigned a role. Here's what each role can do:
 
-| Action | Owner | Admin | Editor | Viewer |
-|--------|:-----:|:-----:|:------:|:------:|
-| View feed, calendar, tree | Yes | Yes | Yes | Yes |
-| React to posts | Yes | Yes | Yes | Yes |
-| Comment on posts | Yes | Yes | Yes | Yes |
-| Create posts | Yes | Yes | Yes | No |
-| Create events | Yes | Yes | Yes | No |
-| Create/complete chores | Yes | Yes | Yes | No |
-| Invite members | Yes | Yes | No | No |
-| Manage member roles | Yes | Yes | No | No |
-| Add non-app persons | Yes | Yes | No | No |
-| Change family theme | Yes | Yes | No | No |
-| Delete others' posts | Yes | Yes | No | No |
-| Transfer ownership | Yes | No | No | No |
-| Delete family | Yes | No | No | No |
+| Action                    | Owner | Admin | Editor | Viewer |
+| ------------------------- | :---: | :---: | :----: | :----: |
+| View feed, calendar, tree |  Yes  |  Yes  |  Yes   |  Yes   |
+| React to posts            |  Yes  |  Yes  |  Yes   |  Yes   |
+| Comment on posts          |  Yes  |  Yes  |  Yes   |  Yes   |
+| Create posts              |  Yes  |  Yes  |  Yes   |   No   |
+| Create events             |  Yes  |  Yes  |  Yes   |   No   |
+| Create/complete chores    |  Yes  |  Yes  |  Yes   |   No   |
+| Invite members            |  Yes  |  Yes  |   No   |   No   |
+| Manage member roles       |  Yes  |  Yes  |   No   |   No   |
+| Add non-app persons       |  Yes  |  Yes  |   No   |   No   |
+| Change family theme       |  Yes  |  Yes  |   No   |   No   |
+| Delete others' posts      |  Yes  |  Yes  |   No   |   No   |
+| Transfer ownership        |  Yes  |  No   |   No   |   No   |
+| Delete family             |  Yes  |  No   |   No   |   No   |
 
 > **Tip:** The person who creates the family is automatically the Owner. They can promote others to Admin to help manage the family.

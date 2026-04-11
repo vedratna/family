@@ -51,9 +51,7 @@ export function FamilySwitcherScreen({
               <Text style={[styles.familyName, { color: theme.colors.text.primary }]}>
                 {item.name}
               </Text>
-              <Text style={[styles.role, { color: theme.colors.text.tertiary }]}>
-                {item.role}
-              </Text>
+              <Text style={[styles.role, { color: theme.colors.text.tertiary }]}>{item.role}</Text>
               {item.isActive && (
                 <View style={[styles.activeBadge, { backgroundColor: accent.light }]}>
                   <Text style={[styles.activeBadgeText, { color: accent.primary }]}>Active</Text>

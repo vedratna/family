@@ -1,7 +1,6 @@
 import Constants from "expo-constants";
 import { createContext, useContext, type ReactNode } from "react";
 
-
 interface AppConfig {
   isMockMode: boolean;
   apiUrl: string;

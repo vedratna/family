@@ -53,7 +53,8 @@ export function EventDetailScreen({
 
       <View style={styles.metaRow}>
         <Text style={[styles.meta, { color: theme.colors.text.secondary }]}>
-          {startDate}{startTime !== undefined ? ` at ${startTime}` : ""}
+          {startDate}
+          {startTime !== undefined ? ` at ${startTime}` : ""}
         </Text>
         {location !== undefined && (
           <Text style={[styles.meta, { color: theme.colors.text.secondary }]}>
@@ -73,9 +74,7 @@ export function EventDetailScreen({
         </Text>
       )}
 
-      <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-        Your RSVP
-      </Text>
+      <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Your RSVP</Text>
       <View style={styles.rsvpRow}>
         {RSVP_OPTIONS.map((opt) => (
           <Pressable
@@ -83,17 +82,30 @@ export function EventDetailScreen({
             style={[
               styles.rsvpButton,
               {
-                backgroundColor: userRSVP === opt.status ? theme.colors.accent.primary : theme.colors.background.card,
-                borderColor: userRSVP === opt.status ? theme.colors.accent.primary : theme.colors.border.primary,
+                backgroundColor:
+                  userRSVP === opt.status
+                    ? theme.colors.accent.primary
+                    : theme.colors.background.card,
+                borderColor:
+                  userRSVP === opt.status
+                    ? theme.colors.accent.primary
+                    : theme.colors.border.primary,
               },
             ]}
-            onPress={() => { onRSVP(opt.status); }}
+            onPress={() => {
+              onRSVP(opt.status);
+            }}
             testID={`rsvp-${opt.status}`}
           >
             <Text
               style={[
                 styles.rsvpText,
-                { color: userRSVP === opt.status ? theme.colors.accent.onColor : theme.colors.text.primary },
+                {
+                  color:
+                    userRSVP === opt.status
+                      ? theme.colors.accent.onColor
+                      : theme.colors.text.primary,
+                },
               ]}
             >
               {opt.label}
@@ -143,11 +155,23 @@ const styles = StyleSheet.create({
   description: { fontSize: 16, lineHeight: 24, marginBottom: 24 },
   sectionTitle: { fontSize: 16, fontWeight: "600", marginBottom: 12, marginTop: 8 },
   rsvpRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
-  rsvpButton: { flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 10, alignItems: "center" },
+  rsvpButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
   rsvpText: { fontSize: 14, fontWeight: "600" },
   attendeeRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8 },
   attendeeName: { fontSize: 15 },
   attendeeStatus: { fontSize: 13, textTransform: "capitalize" },
-  editButton: { borderWidth: 1.5, borderRadius: 12, paddingVertical: 14, alignItems: "center", marginTop: 24 },
+  editButton: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 24,
+  },
   editButtonText: { fontSize: 16, fontWeight: "600" },
 });

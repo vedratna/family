@@ -27,9 +27,7 @@ export function PersonProfileCard({
     <Modal visible={visible} transparent animationType="slide" testID="person-profile-modal">
       <View style={styles.overlay}>
         <View style={[styles.card, { backgroundColor: theme.colors.background.card }]}>
-          <View
-            style={[styles.avatar, { backgroundColor: theme.colors.accent.light }]}
-          >
+          <View style={[styles.avatar, { backgroundColor: theme.colors.accent.light }]}>
             <Text style={[styles.avatarText, { color: theme.colors.accent.primary }]}>
               {name.charAt(0).toUpperCase()}
             </Text>
@@ -63,7 +61,14 @@ export function PersonProfileCard({
             )}
 
             <Pressable
-              style={[styles.actionButton, { borderColor: theme.colors.accent.primary, borderWidth: 1, backgroundColor: "transparent" }]}
+              style={[
+                styles.actionButton,
+                {
+                  borderColor: theme.colors.accent.primary,
+                  borderWidth: 1,
+                  backgroundColor: "transparent",
+                },
+              ]}
               onPress={onViewRelationships}
               testID="view-relationships-button"
             >

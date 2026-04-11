@@ -14,6 +14,7 @@ Priya's Account
 ```
 
 Each family is a completely separate space with its own:
+
 - Feed (posts, photos, comments)
 - Calendar (events, reminders)
 - Family tree (members, relationships)
@@ -43,6 +44,7 @@ When you switch, the entire app updates — feed, calendar, tree, chores, and he
 ## Creating Additional Families
 
 Any member can create a new family at any time:
+
 1. Open the family switcher
 2. Tap **+ Create Family**
 3. Name it, pick a theme color, invite members
@@ -52,6 +54,7 @@ You become the Owner of the new family. Your existing families are unaffected.
 ## Roles Across Families
 
 Your role can be different in each family. For example:
+
 - **Owner** of Sharma Family (you created it)
 - **Editor** in Verma Family (your parent created it)
 

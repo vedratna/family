@@ -23,7 +23,11 @@ interface AgendaScreenProps {
   onSwitchToMonth: () => void;
 }
 
-export function AgendaScreen({ sections, onEventPress: _onEventPress, onSwitchToMonth: _onSwitchToMonth }: AgendaScreenProps) {
+export function AgendaScreen({
+  sections,
+  onEventPress: _onEventPress,
+  onSwitchToMonth: _onSwitchToMonth,
+}: AgendaScreenProps) {
   const theme = useTheme();
 
   const flatItems = sections.flatMap((section) => [
@@ -35,7 +39,9 @@ export function AgendaScreen({ sections, onEventPress: _onEventPress, onSwitchTo
     <View style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
       <FlatList
         data={flatItems}
-        keyExtractor={(item, _index) => item.type === "header" ? `header-${item.date}` : `event-${item.id}`}
+        keyExtractor={(item, _index) =>
+          item.type === "header" ? `header-${item.date}` : `event-${item.id}`
+        }
         contentContainerStyle={styles.list}
         renderItem={({ item }) => {
           if (item.type === "header") {
@@ -46,9 +52,12 @@ export function AgendaScreen({ sections, onEventPress: _onEventPress, onSwitchTo
             );
           }
 
-          const emoji = item.eventType === "birthday" ? "\uD83C\uDF82"
-            : item.eventType === "marriage" || item.eventType === "anniversary" ? "\uD83D\uDC8D"
-            : "\uD83D\uDCC5";
+          const emoji =
+            item.eventType === "birthday"
+              ? "\uD83C\uDF82"
+              : item.eventType === "marriage" || item.eventType === "anniversary"
+                ? "\uD83D\uDC8D"
+                : "\uD83D\uDCC5";
 
           return (
             <View
@@ -61,7 +70,8 @@ export function AgendaScreen({ sections, onEventPress: _onEventPress, onSwitchTo
                   {item.title}
                 </Text>
                 <Text style={[styles.eventMeta, { color: theme.colors.text.secondary }]}>
-                  {[item.startTime, item.location].filter(Boolean).join(" \u00B7 ") || item.eventType}
+                  {[item.startTime, item.location].filter(Boolean).join(" \u00B7 ") ||
+                    item.eventType}
                 </Text>
               </View>
             </View>

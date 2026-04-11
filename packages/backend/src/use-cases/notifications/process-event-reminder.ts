@@ -28,11 +28,7 @@ export class ProcessEventReminder {
       "day-of": `${input.eventTitle} is today!`,
     };
 
-    const sendNotif = new SendPushNotification(
-      this.prefRepo,
-      this.deviceTokenRepo,
-      this.sender,
-    );
+    const sendNotif = new SendPushNotification(this.prefRepo, this.deviceTokenRepo, this.sender);
 
     let totalSent = 0;
     for (const membership of memberships) {

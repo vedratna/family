@@ -6,7 +6,14 @@ import { themes, themeNames } from "../colors/themes";
 
 function hexToRgb(hex: string): [number, number, number] {
   const result = /^#([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (result?.[1] === undefined || result[1] === "" || result[2] === undefined || result[2] === "" || result[3] === undefined || result[3] === "") {
+  if (
+    result?.[1] === undefined ||
+    result[1] === "" ||
+    result[2] === undefined ||
+    result[2] === "" ||
+    result[3] === undefined ||
+    result[3] === ""
+  ) {
     throw new Error(`Invalid hex color: ${hex}`);
   }
   return [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)];
@@ -63,7 +70,10 @@ describe("WCAG contrast ratios", () => {
     });
 
     it.each(themeNames)("dark mode accent %s on dark background is readable", (themeName) => {
-      const ratio = contrastRatio(darkModeAccents[themeName].primary, darkColors.background.primary);
+      const ratio = contrastRatio(
+        darkModeAccents[themeName].primary,
+        darkColors.background.primary,
+      );
       expect(ratio).toBeGreaterThanOrEqual(3);
     });
   });

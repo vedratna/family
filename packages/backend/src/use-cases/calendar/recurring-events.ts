@@ -15,9 +15,7 @@ export class GenerateRecurringEvents {
     const yearEnd = referenceDate.substring(0, 4) + "-12-31";
     const events = await this.eventRepo.getByFamilyDateRange(familyId, yearStart, yearEnd);
 
-    const recurringEvents = events.filter(
-      (e) => e.recurrenceRule === "ANNUALLY",
-    );
+    const recurringEvents = events.filter((e) => e.recurrenceRule === "ANNUALLY");
 
     const nextYear = String(Number(referenceDate.substring(0, 4)) + 1);
     const created: FamilyEvent[] = [];

@@ -48,9 +48,7 @@ export function AddRelationshipScreen({ persons, onSubmit }: AddRelationshipScre
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
-      <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-        Define Relationship
-      </Text>
+      <Text style={[styles.title, { color: theme.colors.text.primary }]}>Define Relationship</Text>
 
       <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Person A</Text>
       {persons.map((p) => (
@@ -59,11 +57,15 @@ export function AddRelationshipScreen({ persons, onSubmit }: AddRelationshipScre
           style={[
             styles.personOption,
             {
-              backgroundColor: personAId === p.id ? theme.colors.accent.light : theme.colors.background.card,
-              borderColor: personAId === p.id ? theme.colors.accent.primary : theme.colors.border.primary,
+              backgroundColor:
+                personAId === p.id ? theme.colors.accent.light : theme.colors.background.card,
+              borderColor:
+                personAId === p.id ? theme.colors.accent.primary : theme.colors.border.primary,
             },
           ]}
-          onPress={() => { setPersonAId(p.id); }}
+          onPress={() => {
+            setPersonAId(p.id);
+          }}
           testID={`personA-${p.id}`}
         >
           <Text style={{ color: theme.colors.text.primary }}>{p.name}</Text>
@@ -74,7 +76,10 @@ export function AddRelationshipScreen({ persons, onSubmit }: AddRelationshipScre
         is the ___ of (A to B label)
       </Text>
       <TextInput
-        style={[styles.input, { color: theme.colors.text.primary, borderColor: theme.colors.border.primary }]}
+        style={[
+          styles.input,
+          { color: theme.colors.text.primary, borderColor: theme.colors.border.primary },
+        ]}
         value={aToBLabel}
         onChangeText={setAToBLabel}
         placeholder="e.g., Mother"
@@ -83,28 +88,37 @@ export function AddRelationshipScreen({ persons, onSubmit }: AddRelationshipScre
       />
 
       <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Person B</Text>
-      {persons.filter((p) => p.id !== personAId).map((p) => (
-        <Pressable
-          key={p.id}
-          style={[
-            styles.personOption,
-            {
-              backgroundColor: personBId === p.id ? theme.colors.accent.light : theme.colors.background.card,
-              borderColor: personBId === p.id ? theme.colors.accent.primary : theme.colors.border.primary,
-            },
-          ]}
-          onPress={() => { setPersonBId(p.id); }}
-          testID={`personB-${p.id}`}
-        >
-          <Text style={{ color: theme.colors.text.primary }}>{p.name}</Text>
-        </Pressable>
-      ))}
+      {persons
+        .filter((p) => p.id !== personAId)
+        .map((p) => (
+          <Pressable
+            key={p.id}
+            style={[
+              styles.personOption,
+              {
+                backgroundColor:
+                  personBId === p.id ? theme.colors.accent.light : theme.colors.background.card,
+                borderColor:
+                  personBId === p.id ? theme.colors.accent.primary : theme.colors.border.primary,
+              },
+            ]}
+            onPress={() => {
+              setPersonBId(p.id);
+            }}
+            testID={`personB-${p.id}`}
+          >
+            <Text style={{ color: theme.colors.text.primary }}>{p.name}</Text>
+          </Pressable>
+        ))}
 
       <Text style={[styles.label, { color: theme.colors.text.secondary }]}>
         is the ___ of A (B to A label)
       </Text>
       <TextInput
-        style={[styles.input, { color: theme.colors.text.primary, borderColor: theme.colors.border.primary }]}
+        style={[
+          styles.input,
+          { color: theme.colors.text.primary, borderColor: theme.colors.border.primary },
+        ]}
         value={bToALabel}
         onChangeText={setBToALabel}
         placeholder="e.g., Son"
@@ -120,14 +134,23 @@ export function AddRelationshipScreen({ persons, onSubmit }: AddRelationshipScre
             style={[
               styles.typeChip,
               {
-                backgroundColor: type === opt.value ? theme.colors.accent.primary : theme.colors.background.card,
-                borderColor: type === opt.value ? theme.colors.accent.primary : theme.colors.border.primary,
+                backgroundColor:
+                  type === opt.value ? theme.colors.accent.primary : theme.colors.background.card,
+                borderColor:
+                  type === opt.value ? theme.colors.accent.primary : theme.colors.border.primary,
               },
             ]}
-            onPress={() => { setType(opt.value); }}
+            onPress={() => {
+              setType(opt.value);
+            }}
             testID={`type-${opt.value}`}
           >
-            <Text style={{ color: type === opt.value ? theme.colors.accent.onColor : theme.colors.text.primary, fontSize: 13 }}>
+            <Text
+              style={{
+                color: type === opt.value ? theme.colors.accent.onColor : theme.colors.text.primary,
+                fontSize: 13,
+              }}
+            >
               {opt.label}
             </Text>
           </Pressable>
@@ -137,17 +160,32 @@ export function AddRelationshipScreen({ persons, onSubmit }: AddRelationshipScre
       <Pressable
         style={[
           styles.button,
-          { backgroundColor: isValid ? theme.colors.accent.primary : theme.colors.background.tertiary },
+          {
+            backgroundColor: isValid
+              ? theme.colors.accent.primary
+              : theme.colors.background.tertiary,
+          },
         ]}
         onPress={() => {
           if (isValid) {
-            onSubmit({ personAId, personBId, aToBLabel: aToBLabel.trim(), bToALabel: bToALabel.trim(), type });
+            onSubmit({
+              personAId,
+              personBId,
+              aToBLabel: aToBLabel.trim(),
+              bToALabel: bToALabel.trim(),
+              type,
+            });
           }
         }}
         disabled={!isValid}
         testID="save-relationship-button"
       >
-        <Text style={[styles.buttonText, { color: isValid ? theme.colors.accent.onColor : theme.colors.text.tertiary }]}>
+        <Text
+          style={[
+            styles.buttonText,
+            { color: isValid ? theme.colors.accent.onColor : theme.colors.text.tertiary },
+          ]}
+        >
           Save Relationship
         </Text>
       </Pressable>
@@ -159,8 +197,21 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 24, paddingTop: 24 },
   title: { fontSize: 22, fontWeight: "600", marginBottom: 20 },
   label: { fontSize: 14, fontWeight: "500", marginBottom: 8, marginTop: 16 },
-  input: { fontSize: 16, borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 4 },
-  personOption: { borderWidth: 1, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 6 },
+  input: {
+    fontSize: 16,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 4,
+  },
+  personOption: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 6,
+  },
   typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   typeChip: { borderWidth: 1, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10 },
   button: { borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 24 },

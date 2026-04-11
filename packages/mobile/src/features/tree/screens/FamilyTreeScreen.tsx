@@ -53,10 +53,7 @@ export function FamilyTreeScreen({
   }
 
   // Group nodes by generation for layout
-  const generationGroups: TreeNodeData[][] = Array.from(
-    { length: generations },
-    () => [],
-  );
+  const generationGroups: TreeNodeData[][] = Array.from({ length: generations }, () => []);
   for (const node of nodes) {
     generationGroups[node.generation]?.push(node);
   }

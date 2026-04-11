@@ -92,12 +92,12 @@ packages/mobile/src/
 
 ### Feature isolation rules
 
-| Rule | Detail |
-|------|--------|
-| No cross-feature imports | Feature A never imports from `features/B/components/` directly |
-| Shared types only | Cross-feature data goes through `@family/shared` package types |
-| Navigation params | Features communicate via typed navigation params |
-| Provider access | Features read global state through providers (AuthProvider, FamilyProvider) |
+| Rule                     | Detail                                                                      |
+| ------------------------ | --------------------------------------------------------------------------- |
+| No cross-feature imports | Feature A never imports from `features/B/components/` directly              |
+| Shared types only        | Cross-feature data goes through `@family/shared` package types              |
+| Navigation params        | Features communicate via typed navigation params                            |
+| Provider access          | Features read global state through providers (AuthProvider, FamilyProvider) |
 
 ---
 
@@ -163,11 +163,11 @@ Screens contain zero business logic. Each screen calls one primary hook (the "vi
 
 ### Why this split matters
 
-| Layer | Responsibility | Testable via |
-|-------|---------------|-------------|
-| Screen | Layout, styling, user gestures | Snapshot tests, component tests |
-| Hook | State orchestration, derived data, side effects | Unit tests (renderHook) |
-| API | Network calls, request/response mapping | Mock tests, integration tests |
+| Layer  | Responsibility                                  | Testable via                    |
+| ------ | ----------------------------------------------- | ------------------------------- |
+| Screen | Layout, styling, user gestures                  | Snapshot tests, component tests |
+| Hook   | State orchestration, derived data, side effects | Unit tests (renderHook)         |
+| API    | Network calls, request/response mapping         | Mock tests, integration tests   |
 
 Screens import from `hooks/` and `components/` within the same feature. Hooks import from `api/` within the same feature. The API layer uses the GraphQL client configured in the shared providers.
 
@@ -330,16 +330,16 @@ The theme system resolves a complete theme object from two inputs: the active fa
 
 Eight palettes are available. Each family picks one during creation; members can change it in family settings.
 
-| Palette | Primary (Light) | Primary (Dark) | Use case |
-|---------|----------------|---------------|----------|
-| Teal | `#0D9488` | `#2DD4BF` | Default, fresh and neutral |
-| Indigo | `#4F46E5` | `#818CF8` | Professional, structured families |
-| Coral | `#F43F5E` | `#FB7185` | Warm, energetic |
-| Sage | `#059669` | `#34D399` | Calm, nature-oriented |
-| Amber | `#D97706` | `#FBBF24` | Warm, cheerful |
-| Ocean | `#0284C7` | `#38BDF8` | Cool, trustworthy |
-| Plum | `#9333EA` | `#C084FC` | Creative, playful |
-| Slate | `#475569` | `#94A3B8` | Minimal, understated |
+| Palette | Primary (Light) | Primary (Dark) | Use case                          |
+| ------- | --------------- | -------------- | --------------------------------- |
+| Teal    | `#0D9488`       | `#2DD4BF`      | Default, fresh and neutral        |
+| Indigo  | `#4F46E5`       | `#818CF8`      | Professional, structured families |
+| Coral   | `#F43F5E`       | `#FB7185`      | Warm, energetic                   |
+| Sage    | `#059669`       | `#34D399`      | Calm, nature-oriented             |
+| Amber   | `#D97706`       | `#FBBF24`      | Warm, cheerful                    |
+| Ocean   | `#0284C7`       | `#38BDF8`      | Cool, trustworthy                 |
+| Plum    | `#9333EA`       | `#C084FC`      | Creative, playful                 |
+| Slate   | `#475569`       | `#94A3B8`      | Minimal, understated              |
 
 ### Theme tokens
 
@@ -401,16 +401,20 @@ function PostCard({ post }: Props) {
   const theme = useTheme();
 
   return (
-    <View style={{
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.radius.lg,
-      padding: theme.spacing.md,
-      ...theme.shadows.sm,
-    }}>
-      <Text style={{
-        color: theme.colors.text,
-        fontSize: theme.typography.sizes.base,
-      }}>
+    <View
+      style={{
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.radius.lg,
+        padding: theme.spacing.md,
+        ...theme.shadows.sm,
+      }}
+    >
+      <Text
+        style={{
+          color: theme.colors.text,
+          fontSize: theme.typography.sizes.base,
+        }}
+      >
         {post.body}
       </Text>
     </View>
@@ -548,12 +552,12 @@ The root of the app composes several providers. Order matters: each provider can
 
 ### Provider responsibilities
 
-| Provider | Context value | Depends on |
-|----------|--------------|------------|
-| `QueryProvider` | QueryClient instance | Nothing |
-| `AuthProvider` | `{ user, isAuthenticated, signIn, signOut, session }` | QueryProvider (for auth queries) |
-| `FamilyProvider` | `{ activeFamily, families, switchFamily, isLoading }` | AuthProvider (needs user ID) |
-| `ThemeProvider` | `{ theme, colorScheme, toggleColorScheme }` | FamilyProvider (needs accent color) |
+| Provider         | Context value                                         | Depends on                          |
+| ---------------- | ----------------------------------------------------- | ----------------------------------- |
+| `QueryProvider`  | QueryClient instance                                  | Nothing                             |
+| `AuthProvider`   | `{ user, isAuthenticated, signIn, signOut, session }` | QueryProvider (for auth queries)    |
+| `FamilyProvider` | `{ activeFamily, families, switchFamily, isLoading }` | AuthProvider (needs user ID)        |
+| `ThemeProvider`  | `{ theme, colorScheme, toggleColorScheme }`           | FamilyProvider (needs accent color) |
 
 ### Provider data flow
 
@@ -630,14 +634,14 @@ A generic colored rectangle with an icon, used as a stand-in where custom illust
 
 ### File naming
 
-| Type | Convention | Example |
-|------|-----------|---------|
-| Screen | `PascalCase` + `Screen` suffix | `FeedScreen.tsx` |
-| Hook | `camelCase` + `use` prefix | `useFeed.ts` |
-| Component | `PascalCase` | `PostCard.tsx` |
-| API file | `camelCase` | `feedApi.ts` |
-| Query keys | `camelCase` + `Keys` suffix | `feedKeys.ts` |
-| Types | `PascalCase` | `Post.ts` (in `@family/shared`) |
+| Type       | Convention                     | Example                         |
+| ---------- | ------------------------------ | ------------------------------- |
+| Screen     | `PascalCase` + `Screen` suffix | `FeedScreen.tsx`                |
+| Hook       | `camelCase` + `use` prefix     | `useFeed.ts`                    |
+| Component  | `PascalCase`                   | `PostCard.tsx`                  |
+| API file   | `camelCase`                    | `feedApi.ts`                    |
+| Query keys | `camelCase` + `Keys` suffix    | `feedKeys.ts`                   |
+| Types      | `PascalCase`                   | `Post.ts` (in `@family/shared`) |
 
 ### Hook rules
 

@@ -9,6 +9,7 @@ gh repo create family-app --private --source=. --push
 ```
 
 Or create via GitHub UI and add remote:
+
 ```bash
 git remote add origin git@github.com:<your-org>/family-app.git
 git push -u origin main
@@ -17,6 +18,7 @@ git push -u origin main
 ## 2. Branch Protection (Settings > Branches)
 
 For the `main` branch:
+
 - [x] Require a pull request before merging
   - [x] Require approvals: 1
   - [x] Dismiss stale pull request approvals when new commits are pushed
@@ -35,21 +37,23 @@ For the `main` branch:
 ## 3. GitHub Environments (Settings > Environments)
 
 ### `dev` environment
+
 - No protection rules (auto-deploys on merge to main)
 
 ### `production` environment
+
 - Required reviewers: 1+ team member
 - Wait timer: 0 (approval is the gate)
 - Deployment branches: `main` only
 
 ## 4. Repository Secrets (Settings > Secrets > Actions)
 
-| Secret | Required For | How to Get |
-|--------|-------------|------------|
-| `AWS_ACCESS_KEY_ID` | CDK deploy | IAM user with CDK permissions |
-| `AWS_SECRET_ACCESS_KEY` | CDK deploy | Same IAM user |
-| `AWS_REGION` | CDK deploy | `ap-south-1` |
-| `EXPO_TOKEN` | EAS builds | `expo login` → Account Settings → Access Tokens |
+| Secret                  | Required For | How to Get                                      |
+| ----------------------- | ------------ | ----------------------------------------------- |
+| `AWS_ACCESS_KEY_ID`     | CDK deploy   | IAM user with CDK permissions                   |
+| `AWS_SECRET_ACCESS_KEY` | CDK deploy   | Same IAM user                                   |
+| `AWS_REGION`            | CDK deploy   | `ap-south-1`                                    |
+| `EXPO_TOKEN`            | EAS builds   | `expo login` → Account Settings → Access Tokens |
 
 ## 5. Merge Settings (Settings > General > Pull Requests)
 

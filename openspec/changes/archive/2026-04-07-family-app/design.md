@@ -5,6 +5,7 @@ This is a greenfield project — no existing codebase, infrastructure, or users.
 The target audience is extended families (potentially 50+ members spanning multiple generations). The app must be usable by both tech-savvy younger members and less technical older family members. One user may belong to multiple family groups.
 
 Key constraints:
+
 - AWS serverless backend (cost-efficient at low scale, scales with growth)
 - React Native (Expo) for mobile-first delivery on iOS and Android
 - Privacy-first: no ads, no data selling, no third-party tracking
@@ -15,6 +16,7 @@ Key constraints:
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Deliver a Phase 1 mobile app with: auth, family management, member relationships, social feed, calendar, and push notifications
 - Design a backend API that can serve both mobile and a future React web app
 - Auto-generate family trees from relationship data without manual tree building
@@ -25,6 +27,7 @@ Key constraints:
 - Achieve high test coverage with automated quality gates blocking all merges
 
 **Non-Goals:**
+
 - React web app (Phase 2 — not in this change)
 - Chore management (Phase 3)
 - Direct social media API integrations for cross-posting (v1 uses native share sheet)
@@ -51,6 +54,7 @@ Key constraints:
 - **GSI1**: For reverse lookups (e.g., all relationships for a person)
 
 **Relationship queries:** The family tree and relationship inference require multi-hop traversals. Since families are bounded in size (typically <200 members), the approach is:
+
 1. Fetch ALL relationships for a family in a single query (PK: `FAMILY#<id>`, SK begins_with `REL#`)
 2. Build the graph in the Lambda function (application-level traversal)
 3. Cache the computed tree in a dedicated item (`PK: FAMILY#<id>`, `SK: TREE_CACHE`) and invalidate on relationship changes
@@ -58,8 +62,9 @@ Key constraints:
 This is viable because family graphs are small. A family of 200 people might have ~400 relationships — easily fits in a single DynamoDB response and can be traversed in-memory in milliseconds.
 
 **Alternatives considered:**
-- *Aurora Serverless v2 (PostgreSQL)*: Recursive CTEs and JOINs handle relationship queries naturally. But minimum ~$50/mo cost is too high for early stage. Can migrate later if revenue supports it.
-- *Neptune (graph DB)*: Purpose-built for graph queries. Overkill and expensive for this use case.
+
+- _Aurora Serverless v2 (PostgreSQL)_: Recursive CTEs and JOINs handle relationship queries naturally. But minimum ~$50/mo cost is too high for early stage. Can migrate later if revenue supports it.
+- _Neptune (graph DB)_: Purpose-built for graph queries. Overkill and expensive for this use case.
 
 ### 2. API: GraphQL (AppSync) over REST
 
@@ -68,8 +73,9 @@ This is viable because family graphs are small. A family of 200 people might hav
 **Rationale:** The mobile app has varied data needs — the feed screen needs posts with author info and recent comments; the tree screen needs all relationships; the calendar needs events in a date range. GraphQL lets the client fetch exactly what it needs in one request, reducing round-trips on mobile networks. AppSync also provides built-in real-time subscriptions for live feed updates.
 
 **Alternatives considered:**
-- *REST via API Gateway + Lambda*: Simpler to build initially. But would require multiple endpoints and over-fetching or under-fetching on mobile. Rejected for mobile efficiency reasons.
-- *Self-hosted GraphQL (Apollo)*: More control but requires managing servers. AppSync is managed and integrates well with Cognito and Lambda.
+
+- _REST via API Gateway + Lambda_: Simpler to build initially. But would require multiple endpoints and over-fetching or under-fetching on mobile. Rejected for mobile efficiency reasons.
+- _Self-hosted GraphQL (Apollo)_: More control but requires managing servers. AppSync is managed and integrates well with Cognito and Lambda.
 
 ### 3. Auth: AWS Cognito
 
@@ -104,6 +110,7 @@ Social login (Google/Apple) will be supported as secondary options.
 **Rationale:** When a new relationship is added (e.g., "Rajesh is Grandma's son"), a Lambda evaluates existing relationships to suggest new ones (e.g., "Rajesh's wife Priya is Grandma's daughter-in-law"). Suggestions are stored as "pending" relationships that an admin can confirm with one tap.
 
 Inference rules:
+
 - Parent + Spouse → In-law
 - Parent's Parent → Grandparent
 - Parent's Sibling → Uncle/Aunt
@@ -133,9 +140,10 @@ packages/
 Key benefit: Input validation schemas (Zod) are defined once in `shared/` and used on both client (instant feedback) and server (security). No drift between what frontend expects and backend enforces.
 
 **Alternatives considered:**
-- *Python backend*: Pydantic is excellent for validation, but forces duplicate type definitions across two languages, double the tooling config (ESLint + Ruff, Jest + Pytest, npm + pip), and prevents code sharing. Rejected for maintainability.
-- *Nx*: More features than Turborepo but heavier and more opinionated. Turborepo is simpler and sufficient.
-- *Plain npm workspaces*: No build caching or task orchestration. Turborepo adds this with minimal config.
+
+- _Python backend_: Pydantic is excellent for validation, but forces duplicate type definitions across two languages, double the tooling config (ESLint + Ruff, Jest + Pytest, npm + pip), and prevents code sharing. Rejected for maintainability.
+- _Nx_: More features than Turborepo but heavier and more opinionated. Turborepo is simpler and sufficient.
+- _Plain npm workspaces_: No build caching or task orchestration. Turborepo adds this with minimal config.
 
 ### 10. Clean / Hexagonal Architecture (Backend)
 
@@ -144,6 +152,7 @@ Key benefit: Input validation schemas (Zod) are defined once in `shared/` and us
 **Rationale:** Separating business logic from infrastructure (DynamoDB, AppSync, SNS) makes the codebase testable, maintainable, and portable. Use cases can be unit-tested with mocked repositories — no AWS needed. If we later migrate from DynamoDB to PostgreSQL, only the repository implementations change; business logic is untouched.
 
 Layer rules (enforced by `eslint-plugin-boundaries`):
+
 - **Domain models**: Pure TypeScript types/interfaces. No imports from any other layer. No framework dependencies.
 - **Use cases**: Business logic. Depend only on domain models and repository interfaces. No AWS SDK imports.
 - **Repositories**: Data access. Implement repository interfaces. DynamoDB-specific code lives only here.
@@ -168,6 +177,7 @@ Repository (data access)
 ```
 
 **Patterns applied:**
+
 - **Repository Pattern** — abstracts data access behind interfaces
 - **Dependency Injection** — use cases receive repositories, not instantiate them
 - **Domain Error Types** — typed errors (NotFoundError, PermissionDeniedError, ValidationError) instead of generic Error throws
@@ -202,6 +212,7 @@ providers/
 ```
 
 **Key patterns:**
+
 - **TanStack Query** for server state — caching, deduplication, background refresh, stale-while-revalidate
 - **Presentational/Container split** — shared components are pure UI, feature components wire data
 - **Design tokens** — centralized theme, no hardcoded colors/spacing
@@ -212,17 +223,18 @@ providers/
 
 **Toolchain:**
 
-| Tool | Purpose | Scope |
-|------|---------|-------|
-| TypeScript (strict mode) | Type safety, null checks, exhaustive switches | All packages |
-| ESLint | Code patterns, no-any, no-floating-promises, import order | All TS/TSX files |
+| Tool                     | Purpose                                                             | Scope            |
+| ------------------------ | ------------------------------------------------------------------- | ---------------- |
+| TypeScript (strict mode) | Type safety, null checks, exhaustive switches                       | All packages     |
+| ESLint                   | Code patterns, no-any, no-floating-promises, import order           | All TS/TSX files |
 | eslint-plugin-boundaries | Architecture layer enforcement (prevent screens importing DynamoDB) | Backend + Mobile |
-| Prettier | Consistent formatting | All files |
-| Zod | Runtime input validation at API boundaries | Shared package |
-| Husky + lint-staged | Pre-commit gate (lint + format on staged files) | Git hooks |
-| commitlint | Conventional commit messages | Git hooks |
+| Prettier                 | Consistent formatting                                               | All files        |
+| Zod                      | Runtime input validation at API boundaries                          | Shared package   |
+| Husky + lint-staged      | Pre-commit gate (lint + format on staged files)                     | Git hooks        |
+| commitlint               | Conventional commit messages                                        | Git hooks        |
 
 **TypeScript strict config (non-negotiable):**
+
 - `strict: true` — enables all strict checks
 - `noUncheckedIndexedAccess: true` — forces handling undefined from array/object access (critical for DynamoDB results)
 - `noImplicitReturns: true`
@@ -230,6 +242,7 @@ providers/
 - `forceConsistentCasingInFileNames: true`
 
 **ESLint rules beyond defaults:**
+
 - `@typescript-eslint/no-explicit-any` — no `any` types, ever
 - `@typescript-eslint/no-floating-promises` — every Promise must be awaited or handled
 - `@typescript-eslint/strict-boolean-expressions` — no truthy/falsy shortcuts on non-booleans
@@ -245,6 +258,7 @@ providers/
 **No defensive code / no dead code policy:**
 
 Trust the type system and framework guarantees. Do not write defensive code for scenarios that TypeScript's type checker already prevents. Examples of what is NOT allowed:
+
 - Null-checking a value that the type system guarantees is non-null
 - Try/catch around code that cannot throw based on its contract
 - `if (typeof x === 'string')` when `x` is already typed as `string`
@@ -261,11 +275,13 @@ The principle: **fail fast, fail loud**. If something unexpected happens, throw 
 **Decision:** Follow the testing pyramid with 80% minimum line coverage enforced in CI. 100% coverage required on use-cases/.
 
 **Testing layers:**
+
 - **Unit tests (75%)** — Use cases with mocked repositories, domain models, relationship inference engine, React hooks (`@testing-library/react-hooks`), components (React Native Testing Library)
 - **Integration tests (20%)** — Lambda handlers with DynamoDB Local (real DynamoDB operations), API resolver tests with real data, permission enforcement tests across all operations
 - **E2E tests (5%)** — Detox for critical user flows: register → create family → add member → create post; login → switch family → view feed
 
 **Testing tools:**
+
 - **Vitest** — fast, TypeScript-native test runner (preferred over Jest for speed)
 - **DynamoDB Local** — runs in Docker for integration tests, no AWS account needed
 - **React Native Testing Library** — component tests focused on user behavior, not implementation
@@ -277,6 +293,7 @@ The principle: **fail fast, fail loud**. If something unexpected happens, throw 
 **Decision:** GitHub Actions CI pipeline with 7 parallel/sequential checks. All must pass before PR is mergeable.
 
 **Pipeline:**
+
 1. **Lint & Format Check** — ESLint + Prettier (fail-fast)
 2. **Type Check** — `tsc --noEmit` across all packages
 3. **Unit Tests** — Vitest with coverage report
@@ -288,6 +305,7 @@ The principle: **fail fast, fail loud**. If something unexpected happens, throw 
 Steps 1-3 run in parallel for speed. No merging until all 7 pass.
 
 **Pre-commit hooks (local, via Husky + lint-staged):**
+
 - On commit: ESLint on staged .ts/.tsx files, Prettier on staged files, commitlint on commit message
 - On push: Type check (`tsc --noEmit`)
 
@@ -296,18 +314,21 @@ Steps 1-3 run in parallel for speed. No merging until all 7 pass.
 **Decision:** Apply Lambda and DynamoDB best practices for cold start optimization and efficient data access.
 
 **Lambda:**
+
 - **esbuild bundling** — tree-shaken, small bundles for faster cold starts
 - **Connection reuse** — initialize DynamoDB client outside handler (reused across warm invocations)
 - **Minimal dependencies** — keep Lambda packages lean; shared code via Lambda layers
 - **Provisioned concurrency** — not needed at launch, available if latency becomes critical
 
 **DynamoDB:**
+
 - **ProjectionExpression** — fetch only needed attributes, reduce read capacity consumption
 - **BatchGetItem / BatchWriteItem** — batch operations where possible
 - **Tree cache** — computed family tree cached as a DynamoDB item, invalidated on relationship changes
 - **Pagination** — cursor-based pagination for feed and comments using DynamoDB's `ExclusiveStartKey`
 
 **Frontend:**
+
 - **TanStack Query** — automatic caching, background refetch, stale-while-revalidate
 - **FlatList virtualization** — only render visible items in feed and member lists
 - **Image optimization** — lazy loading, progressive loading, cached thumbnails
@@ -321,6 +342,7 @@ Steps 1-3 run in parallel for speed. No merging until all 7 pass.
 **Color architecture:** Only the accent color changes per theme. Backgrounds, text, spacing, typography, semantic colors (red/amber/green) are constant across all themes. This ensures consistency, accessibility, and maintainability.
 
 **Base palette (constant across all themes):**
+
 - Light mode backgrounds: Warm White (#FAFAF8), Warm Gray (#F4F3F0 cards, #EDECEA secondary)
 - Dark mode backgrounds: Warm Dark (#1A1A1A), Elevated (#242422, #2E2E2C). Never pure black.
 - Light mode text: #1A1A1A (primary), #6B6966 (secondary), #9C9894 (tertiary)
@@ -329,18 +351,19 @@ Steps 1-3 run in parallel for speed. No merging until all 7 pass.
 
 **8 accent themes:**
 
-| Theme | Primary | Dark | Light Tint | Dark Mode Adjusted |
-|-------|---------|------|------------|-------------------|
-| Teal (default) | #2B8A7E | #237069 | #E6F4F2 | #3DBCAD |
-| Indigo | #5B5FC7 | #4A4EB5 | #EDEDFA | #7B7FE0 |
-| Coral | #C96B5B | #B35A4A | #FAEAE7 | #E0857A |
-| Sage | #6B8F71 | #5A7A5F | #E8F0E9 | #8AB891 |
-| Amber | #B8860B | #9A7209 | #F5EDD6 | #D4A830 |
-| Ocean | #3A7CA5 | #2E6384 | #E3EFF5 | #5A9DC5 |
-| Plum | #8B5E83 | #744D6D | #F2E8F0 | #A87DA0 |
-| Slate | #64748B | #4F5D73 | #E8ECF0 | #8494A7 |
+| Theme          | Primary | Dark    | Light Tint | Dark Mode Adjusted |
+| -------------- | ------- | ------- | ---------- | ------------------ |
+| Teal (default) | #2B8A7E | #237069 | #E6F4F2    | #3DBCAD            |
+| Indigo         | #5B5FC7 | #4A4EB5 | #EDEDFA    | #7B7FE0            |
+| Coral          | #C96B5B | #B35A4A | #FAEAE7    | #E0857A            |
+| Sage           | #6B8F71 | #5A7A5F | #E8F0E9    | #8AB891            |
+| Amber          | #B8860B | #9A7209 | #F5EDD6    | #D4A830            |
+| Ocean          | #3A7CA5 | #2E6384 | #E3EFF5    | #5A9DC5            |
+| Plum           | #8B5E83 | #744D6D | #F2E8F0    | #A87DA0            |
+| Slate          | #64748B | #4F5D73 | #E8ECF0    | #8494A7            |
 
 **Dark mode strategy:**
+
 - Follows device system setting by default
 - Manual override in app settings: Light / Dark / System (per-user, not per-family)
 - Accent colors brighten slightly in dark mode for contrast
@@ -348,6 +371,7 @@ Steps 1-3 run in parallel for speed. No merging until all 7 pass.
 - Warm dark (#1A1A1A) not pure black — softer on eyes at night
 
 **Theme token structure:**
+
 ```
 shared/theme/
 ├── colors/
@@ -362,6 +386,7 @@ shared/theme/
 ```
 
 **Cross-generational accessibility (non-negotiable):**
+
 - Typography: 16px base minimum, 13px absolute minimum for captions. System font (San Francisco / Roboto).
 - Contrast: WCAG AAA (7:1) for all essential text. AA (4.5:1) minimum for accent-on-white.
 - Touch targets: 48x48px minimum (Apple HIG). List items 56px minimum height.
@@ -373,6 +398,7 @@ shared/theme/
 **Decision:** Use Open Peeps for people-focused illustrations and unDraw for feature/situation illustrations. All illustrations tinted with the active family's accent color.
 
 **Open Peeps (people-focused):**
+
 - Welcome/onboarding screens
 - Empty family members list
 - Invitation sent/pending states
@@ -380,6 +406,7 @@ shared/theme/
 - Family tree placeholder nodes
 
 **unDraw (feature/situation-focused):**
+
 - Empty feed ("Share your first moment")
 - Empty calendar ("No events yet")
 - Empty chores ("All caught up!")
@@ -387,6 +414,7 @@ shared/theme/
 - Error and offline states
 
 **Style guidelines:**
+
 - Loose, hand-drawn line art. Warm, slightly imperfect strokes.
 - Muted fills using the current family's theme accent color — same illustration feels different per family.
 - Diverse family representations, multigenerational scenes.
@@ -397,6 +425,7 @@ shared/theme/
 **Decision:** Two distinct onboarding paths — one for the family definer (creator) and one for invitees joining via link.
 
 **Definer flow (5 screens):**
+
 1. Welcome — hero illustration (Open Peeps), sign-up options (phone, Google, Apple)
 2. Phone verification — OTP entry, auto-advance on complete
 3. Profile setup — name, optional photo (Open Peeps default avatar), optional DOB ("helps us remind your family!")
@@ -404,11 +433,13 @@ shared/theme/
 5. Invite members — pre-populated space for 2 invites (name, phone, relationship). "Add another" expandable. "I'll do this later" de-emphasized.
 
 **Invitee flow (3 screens):**
+
 1. Invitation landing — shows who invited them, which family, pre-filled relationship. One "Join Family" CTA.
 2. Phone verification + profile — minimal: name (pre-filled), photo
 3. Mini-tour overlay — 3 steps: Feed, Calendar+Tree, Notifications. Skippable at any step. Does not repeat.
 
 **Key UX decisions:**
+
 - Definer gets NO tour (they explored during setup)
 - Invitee gets a 3-step mini-tour (they land in an unfamiliar app)
 - DOB nudge tied to feature value ("helps us remind your family!")
@@ -420,10 +451,12 @@ shared/theme/
 **Decision:** The family definer cannot create posts or comments until at least one other member (with an app account) has joined the family. This prevents posting into the void and forces the social loop to complete before content begins.
 
 **Locked state (single-member family):**
+
 - CAN: invite members, add non-app persons, create calendar events, explore tree, define relationships
 - CANNOT: create posts, add comments
 
 **Locked feed shows:**
+
 - System-generated welcome post (always present, not deletable)
 - "Waiting for your family to join" illustration (Open Peeps) with invite status for pending members
 - "While you wait" suggestions: add a family event, add family members to the tree
@@ -434,6 +467,7 @@ shared/theme/
 **Persistent "Invite Family" header button:** displayed until at least 2 members with app accounts have joined. Visible to all members.
 
 **Re-engagement notification cadence (if no member joins):**
+
 - +24 hours: "Your [Family] is waiting! [Names] haven't joined yet. Tap to resend invites."
 - +1 week: "[Family] misses you! Your family space is ready — just needs your family!"
 - +1 month: "Still want to connect your family? [Family] is waiting for its first member."

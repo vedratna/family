@@ -30,9 +30,7 @@ export function ManageMemberScreen({
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
-      <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-        Manage {memberName}
-      </Text>
+      <Text style={[styles.title, { color: theme.colors.text.primary }]}>Manage {memberName}</Text>
 
       <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>Role</Text>
 
