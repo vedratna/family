@@ -1,0 +1,91 @@
+type Query {
+  health: String!
+  myFamilies: [FamilyWithRole!]!
+  familyMembers(familyId: ID!): [Member!]!
+}
+
+type Mutation {
+  register(phone: String!, cognitoSub: String!, displayName: String!): User!
+  updateProfile(displayName: String!, profilePhotoKey: String, dateOfBirth: String): User!
+
+  createFamily(name: String!, themeName: String!): CreateFamilyResult!
+  inviteMember(input: InviteMemberInput!): Invitation!
+  acceptInvitation(familyId: ID!, phone: String!, displayName: String!): AcceptInvitationResult!
+  addNonAppPerson(familyId: ID!, name: String!): Person!
+  updateMemberRole(familyId: ID!, personId: ID!, role: String!): Boolean!
+  transferOwnership(familyId: ID!, newOwnerPersonId: ID!): Boolean!
+  removeMember(familyId: ID!, personId: ID!): Boolean!
+  updateFamilyTheme(familyId: ID!, themeName: String!): Boolean!
+}
+
+type User {
+  id: ID!
+  phone: String!
+  displayName: String!
+  profilePhotoKey: String
+  dateOfBirth: String
+  createdAt: String!
+}
+
+type Family {
+  id: ID!
+  name: String!
+  themeName: String!
+  createdBy: String!
+  createdAt: String!
+}
+
+type Person {
+  id: ID!
+  familyId: ID!
+  userId: String
+  name: String!
+  profilePhotoKey: String
+  createdAt: String!
+}
+
+type Member {
+  person: Person!
+  role: String!
+  joinedAt: String!
+  hasAppAccount: Boolean!
+}
+
+type FamilyWithRole {
+  family: Family!
+  role: String!
+}
+
+type Invitation {
+  familyId: ID!
+  phone: String!
+  invitedBy: String!
+  relationshipToInviter: String!
+  role: String!
+  status: String!
+  createdAt: String!
+}
+
+type CreateFamilyResult {
+  family: Family!
+  person: Person!
+}
+
+type AcceptInvitationResult {
+  person: Person!
+  role: String!
+}
+
+input InviteMemberInput {
+  familyId: ID!
+  phone: String!
+  name: String!
+  relationshipToInviter: String!
+  inverseRelationshipLabel: String!
+  role: String!
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+}

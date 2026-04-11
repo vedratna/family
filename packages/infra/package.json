@@ -1,0 +1,19 @@
+{
+  "name": "@family-app/infra",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "tsc --build",
+    "lint": "eslint --config ../../eslint.config.mjs lib/",
+    "typecheck": "tsc --noEmit",
+    "cdk": "cdk"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.180.0",
+    "constructs": "^10.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "aws-cdk": "^2.180.0"
+  }
+}

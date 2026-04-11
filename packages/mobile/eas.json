@@ -1,0 +1,31 @@
+{
+  "cli": {
+    "version": ">= 13.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "MOCK_MODE": "true",
+        "STAGE": "dev"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "MOCK_MODE": "false",
+        "STAGE": "dev"
+      }
+    },
+    "production": {
+      "env": {
+        "MOCK_MODE": "false",
+        "STAGE": "prod"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "name": "family-app",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "concurrently -n db,api,mobile -c blue,green,magenta \"npm run dev:db\" \"npm run dev:api\" \"npm run dev:mobile\"",
+    "dev:db": "docker compose up dynamodb-local",
+    "dev:api": "npx ts-node packages/backend/src/local-server/index.ts",
+    "dev:mobile": "cd packages/mobile && npx expo start",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\""
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0",
+    "prettier": "^3.5.0",
+    "@eslint/js": "^9.22.0",
+    "eslint": "^9.22.0",
+    "typescript-eslint": "^8.28.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-boundaries": "^5.0.0",
+    "typescript": "^5.8.0",
+    "husky": "^9.1.0",
+    "lint-staged": "^15.4.0",
+    "@commitlint/cli": "^19.7.0",
+    "@commitlint/config-conventional": "^19.7.0",
+    "concurrently": "^9.1.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "npm@11.11.0"
+}
