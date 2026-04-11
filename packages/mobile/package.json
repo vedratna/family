@@ -2,7 +2,7 @@
   "name": "@family-app/mobile",
   "version": "0.0.1",
   "private": true,
-  "main": "expo-router/entry",
+  "main": "index.js",
   "scripts": {
     "build": "echo 'Mobile build handled by EAS'",
     "dev": "expo start",
@@ -13,17 +13,18 @@
   },
   "dependencies": {
     "@family-app/shared": "*",
-    "expo": "~52.0.0",
-    "expo-router": "~4.0.0",
-    "react": "^19.2.4",
-    "react-native": "~0.78.0",
-    "@tanstack/react-query": "^5.70.0"
+    "@tanstack/react-query": "^5.70.0",
+    "expo": "~54.0.0",
+    "expo-router": "~6.0.23",
+    "promise": "^8.3.0",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   },
   "devDependencies": {
-    "@types/react": "~19.0.0",
-    "typescript": "^5.8.0",
-    "vitest": "^3.1.0",
+    "@testing-library/react-native": "^13.1.0",
+    "@types/react": "~19.1.10",
     "@vitest/coverage-v8": "^3.1.0",
-    "@testing-library/react-native": "^13.1.0"
+    "typescript": "^5.8.0",
+    "vitest": "^3.1.0"
   }
 }

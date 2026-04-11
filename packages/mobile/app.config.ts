@@ -4,6 +4,7 @@ const config: ExpoConfig = {
   name: "FamilyApp",
   slug: "family-app",
   version: "1.0.0",
+  entryPoint: "./src/index.ts",
   scheme: "familyapp",
   orientation: "portrait",
   icon: "./assets/icon.png",
