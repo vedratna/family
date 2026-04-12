@@ -10,6 +10,7 @@
     "dev:db": "docker compose up dynamodb-local",
     "dev:api": "tsx packages/backend/src/local-server/index.ts",
     "dev:mobile": "cd packages/mobile && npx expo start",
+    "dev:web": "npm run dev -w @family-app/web",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
