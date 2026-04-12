@@ -8,7 +8,7 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import type { NativeAttributeValue } from "@aws-sdk/util-dynamodb";
 
-import { docClient, TABLE_NAME } from "./client";
+import { docClient, getTableName } from "./client";
 
 export interface DynamoItem {
   PK: string;
@@ -23,7 +23,7 @@ export interface DynamoItem {
 export async function putItem(item: DynamoItem): Promise<void> {
   await docClient.send(
     new PutCommand({
-      TableName: TABLE_NAME,
+      TableName: getTableName(),
       Item: item,
     }),
   );
@@ -32,7 +32,7 @@ export async function putItem(item: DynamoItem): Promise<void> {
 export async function getItem(pk: string, sk: string): Promise<DynamoItem | undefined> {
   const result = await docClient.send(
     new GetCommand({
-      TableName: TABLE_NAME,
+      TableName: getTableName(),
       Key: { PK: pk, SK: sk },
     }),
   );
@@ -42,7 +42,7 @@ export async function getItem(pk: string, sk: string): Promise<DynamoItem | unde
 export async function deleteItem(pk: string, sk: string): Promise<void> {
   await docClient.send(
     new DeleteCommand({
-      TableName: TABLE_NAME,
+      TableName: getTableName(),
       Key: { PK: pk, SK: sk },
     }),
   );
@@ -88,7 +88,7 @@ export async function queryItems(
 
   const result = await docClient.send(
     new QueryCommand({
-      TableName: TABLE_NAME,
+      TableName: getTableName(),
       IndexName: options.indexName,
       KeyConditionExpression: keyCondition,
       ExpressionAttributeValues: expressionValues,
@@ -114,7 +114,7 @@ export async function queryBetween(
 ): Promise<QueryResult> {
   const result = await docClient.send(
     new QueryCommand({
-      TableName: TABLE_NAME,
+      TableName: getTableName(),
       IndexName: options.indexName,
       KeyConditionExpression: "#pk = :pk AND #sk BETWEEN :start AND :end",
       ExpressionAttributeNames: {
@@ -160,7 +160,7 @@ export async function updateItem(
 
   await docClient.send(
     new UpdateCommand({
-      TableName: TABLE_NAME,
+      TableName: getTableName(),
       Key: { PK: pk, SK: sk },
       UpdateExpression: updateExpression,
       ExpressionAttributeNames: expressionNames,
@@ -177,7 +177,7 @@ export async function batchWriteItems(items: DynamoItem[]): Promise<void> {
     await docClient.send(
       new BatchWriteCommand({
         RequestItems: {
-          [TABLE_NAME]: batch.map((item) => ({
+          [getTableName()]: batch.map((item) => ({
             PutRequest: { Item: item },
           })),
         },

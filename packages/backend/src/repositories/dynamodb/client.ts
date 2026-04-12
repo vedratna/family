@@ -20,4 +20,6 @@ export const docClient = DynamoDBDocumentClient.from(baseClient, {
   },
 });
 
-export const TABLE_NAME = process.env["TABLE_NAME"] ?? "family-dev";
+export function getTableName(): string {
+  return process.env["TABLE_NAME"] ?? "family-dev";
+}

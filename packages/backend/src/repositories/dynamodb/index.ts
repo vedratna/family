@@ -1,4 +1,4 @@
-export { docClient, TABLE_NAME } from "./client";
+export { docClient, getTableName } from "./client";
 export { keys } from "./keys";
 export {
   putItem,

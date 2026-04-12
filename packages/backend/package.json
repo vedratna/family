@@ -7,11 +7,14 @@
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "DYNAMODB_ENDPOINT=http://localhost:8000 vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.750.0",
     "@aws-sdk/lib-dynamodb": "^3.750.0",
+    "@aws-sdk/client-s3": "^3.750.0",
+    "@aws-sdk/s3-request-presigner": "^3.750.0",
     "@family-app/shared": "*"
   },
   "devDependencies": {

@@ -67,6 +67,9 @@ export default tseslint.config(
       "**/cdk.out/**",
       "**/.expo/**",
       "eslint.config.mjs",
+      "**/vitest.config.ts",
+      "**/vitest.integration.config.ts",
+      "commitlint.config.js",
     ],
   },
 );
