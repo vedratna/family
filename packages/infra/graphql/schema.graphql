@@ -1,13 +1,37 @@
 type Query {
   health: String!
+
+  # Auth
   myFamilies: [FamilyWithRole!]!
+
+  # Family
   familyMembers(familyId: ID!): [Member!]!
+
+  # Feed
+  familyFeed(familyId: ID!, limit: Int, cursor: String): PaginatedPosts!
+  postComments(postId: ID!, limit: Int, cursor: String): PaginatedComments!
+
+  # Calendar
+  familyEvents(familyId: ID!, startDate: String!, endDate: String!): [Event!]!
+  eventDetail(familyId: ID!, date: String!, eventId: ID!): Event
+
+  # Chores
+  familyChores(familyId: ID!): [Chore!]!
+
+  # Relationships & Tree
+  familyRelationships(familyId: ID!): [Relationship!]!
+  familyTree(familyId: ID!): FamilyTree!
+
+  # Notifications
+  notificationPreferences(familyId: ID!): [NotificationPreference!]!
 }
 
 type Mutation {
+  # Auth
   register(phone: String!, cognitoSub: String!, displayName: String!): User!
   updateProfile(displayName: String!, profilePhotoKey: String, dateOfBirth: String): User!
 
+  # Family
   createFamily(name: String!, themeName: String!): CreateFamilyResult!
   inviteMember(input: InviteMemberInput!): Invitation!
   acceptInvitation(familyId: ID!, phone: String!, displayName: String!): AcceptInvitationResult!
@@ -16,7 +40,42 @@ type Mutation {
   transferOwnership(familyId: ID!, newOwnerPersonId: ID!): Boolean!
   removeMember(familyId: ID!, personId: ID!): Boolean!
   updateFamilyTheme(familyId: ID!, themeName: String!): Boolean!
+
+  # Feed
+  createPost(input: CreatePostInput!): Post!
+  deletePost(familyId: ID!, postId: ID!): Boolean!
+  addReaction(postId: ID!, emoji: String!): Reaction!
+  removeReaction(postId: ID!): Boolean!
+  addComment(input: AddCommentInput!): Comment!
+
+  # Calendar
+  createEvent(input: CreateEventInput!): Event!
+  editEvent(input: EditEventInput!): Boolean!
+  deleteEvent(familyId: ID!, date: String!, eventId: ID!): Boolean!
+  rsvpEvent(eventId: ID!, status: String!): EventRSVP!
+
+  # Chores
+  createChore(input: CreateChoreInput!): Chore!
+  completeChore(familyId: ID!, choreId: ID!): Boolean!
+  rotateChore(familyId: ID!, choreId: ID!): String!
+
+  # Relationships
+  createRelationship(input: CreateRelationshipInput!): Relationship!
+  editRelationship(input: EditRelationshipInput!): Boolean!
+  deleteRelationship(familyId: ID!, personAId: ID!, personBId: ID!): Boolean!
+  confirmInference(familyId: ID!, personAId: ID!, personBId: ID!): Boolean!
+  rejectInference(familyId: ID!, personAId: ID!, personBId: ID!): Boolean!
+
+  # Media
+  generateUploadUrl(familyId: ID!, contentType: String!, sizeBytes: Int!): UploadUrlResult!
+  confirmMediaUpload(input: ConfirmMediaUploadInput!): Media!
+
+  # Notifications
+  updateNotificationPreference(familyId: ID!, category: String!, enabled: Boolean!): Boolean!
+  registerDeviceToken(deviceToken: String!, platform: String!): Boolean!
 }
+
+# ─── Auth Types ───
 
 type User {
   id: ID!
@@ -26,6 +85,8 @@ type User {
   dateOfBirth: String
   createdAt: String!
 }
+
+# ─── Family Types ───
 
 type Family {
   id: ID!
@@ -76,6 +137,141 @@ type AcceptInvitationResult {
   role: String!
 }
 
+# ─── Feed Types ───
+
+type Post {
+  id: ID!
+  familyId: ID!
+  authorPersonId: String!
+  textContent: String!
+  isSystemPost: Boolean!
+  createdAt: String!
+}
+
+type PaginatedPosts {
+  items: [Post!]!
+  cursor: String
+}
+
+type Comment {
+  id: ID!
+  postId: ID!
+  personId: String!
+  textContent: String!
+  createdAt: String!
+}
+
+type PaginatedComments {
+  items: [Comment!]!
+  cursor: String
+}
+
+type Reaction {
+  postId: ID!
+  personId: String!
+  emoji: String!
+  createdAt: String!
+}
+
+# ─── Calendar Types ───
+
+type Event {
+  id: ID!
+  familyId: ID!
+  creatorPersonId: String!
+  title: String!
+  description: String
+  eventType: String!
+  startDate: String!
+  startTime: String
+  location: String
+  recurrenceRule: String
+  createdAt: String!
+}
+
+type EventRSVP {
+  eventId: ID!
+  personId: String!
+  status: String!
+  updatedAt: String!
+}
+
+# ─── Chore Types ───
+
+type Chore {
+  id: ID!
+  familyId: ID!
+  title: String!
+  description: String
+  assigneePersonId: String!
+  dueDate: String
+  recurrenceRule: String
+  rotationMembers: [String!]
+  status: String!
+  completedAt: String
+  createdAt: String!
+}
+
+# ─── Relationship Types ───
+
+type Relationship {
+  id: ID!
+  familyId: ID!
+  personAId: String!
+  personBId: String!
+  aToBLabel: String!
+  bToALabel: String!
+  type: String!
+  status: String!
+  createdAt: String!
+}
+
+# ─── Tree Types ───
+
+type TreeNode {
+  personId: ID!
+  name: String!
+  hasAppAccount: Boolean!
+  generation: Int!
+  spouseIds: [ID!]!
+  childIds: [ID!]!
+  parentIds: [ID!]!
+}
+
+type FamilyTree {
+  nodes: [TreeNode!]!
+  rootIds: [ID!]!
+  generations: Int!
+}
+
+# ─── Media Types ───
+
+type Media {
+  id: ID!
+  familyId: ID!
+  s3Key: String!
+  contentType: String!
+  sizeBytes: Int!
+  uploadedBy: String!
+  createdAt: String!
+}
+
+type UploadUrlResult {
+  uploadUrl: String!
+  s3Key: String!
+}
+
+# ─── Notification Types ───
+
+type NotificationPreference {
+  userId: ID!
+  familyId: ID!
+  category: String!
+  enabled: Boolean!
+}
+
+# ─── Input Types ───
+
 input InviteMemberInput {
   familyId: ID!
   phone: String!
@@ -83,6 +279,75 @@ input InviteMemberInput {
   relationshipToInviter: String!
   inverseRelationshipLabel: String!
   role: String!
+}
+
+input CreatePostInput {
+  familyId: ID!
+  textContent: String!
+}
+
+input AddCommentInput {
+  postId: ID!
+  familyId: ID!
+  textContent: String!
+}
+
+input CreateEventInput {
+  familyId: ID!
+  title: String!
+  description: String
+  eventType: String!
+  startDate: String!
+  startTime: String
+  location: String
+  recurrenceRule: String
+}
+
+input EditEventInput {
+  familyId: ID!
+  eventId: ID!
+  date: String!
+  title: String
+  description: String
+  eventType: String
+  startDate: String
+  startTime: String
+  location: String
+}
+
+input CreateChoreInput {
+  familyId: ID!
+  title: String!
+  description: String
+  assigneePersonId: ID!
+  dueDate: String
+  recurrenceRule: String
+  rotationMembers: [String!]
+}
+
+input CreateRelationshipInput {
+  familyId: ID!
+  personAId: ID!
+  personBId: ID!
+  aToBLabel: String!
+  bToALabel: String!
+  type: String!
+}
+
+input EditRelationshipInput {
+  familyId: ID!
+  personAId: ID!
+  personBId: ID!
+  aToBLabel: String
+  bToALabel: String
+  type: String
+}
+
+input ConfirmMediaUploadInput {
+  s3Key: String!
+  contentType: String!
+  sizeBytes: Int!
+  familyId: ID!
 }
 
 schema {
