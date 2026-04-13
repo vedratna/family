@@ -2,6 +2,7 @@ import type { Family, FamilyMembership, Person, ThemeName } from "@family-app/sh
 
 import type { IFamilyRepository } from "../../repositories/interfaces/family-repo";
 import type { IMembershipRepository } from "../../repositories/interfaces/membership-repo";
+import type { INotificationPreferenceRepository } from "../../repositories/interfaces/notification-repo";
 import type { IPersonRepository } from "../../repositories/interfaces/person-repo";
 
 interface CreateFamilyInput {
@@ -22,6 +23,7 @@ export class CreateFamily {
     private readonly familyRepo: IFamilyRepository,
     private readonly personRepo: IPersonRepository,
     private readonly membershipRepo: IMembershipRepository,
+    private readonly notifPrefRepo: INotificationPreferenceRepository,
   ) {}
 
   async execute(input: CreateFamilyInput): Promise<CreateFamilyResult> {
@@ -56,6 +58,7 @@ export class CreateFamily {
     await this.familyRepo.create(family);
     await this.personRepo.create(person);
     await this.membershipRepo.create(membership);
+    await this.notifPrefRepo.setDefaults(input.userId, familyId);
 
     return { family, person, membership };
   }

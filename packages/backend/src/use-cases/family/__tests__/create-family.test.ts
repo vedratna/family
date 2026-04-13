@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 
 import type { IFamilyRepository } from "../../../repositories/interfaces/family-repo";
 import type { IMembershipRepository } from "../../../repositories/interfaces/membership-repo";
+import type { INotificationPreferenceRepository } from "../../../repositories/interfaces/notification-repo";
 import type { IPersonRepository } from "../../../repositories/interfaces/person-repo";
 import { CreateFamily } from "../create-family";
 
@@ -29,18 +30,28 @@ function mockMembershipRepo(): IMembershipRepository {
     countActiveMembers: vi.fn(),
   };
 }
+function mockNotifPrefRepo(): INotificationPreferenceRepository {
+  return {
+    getByUser: vi.fn(),
+    getByUserAndFamily: vi.fn(),
+    upsert: vi.fn(),
+    setDefaults: vi.fn(),
+  };
+}
 
 describe("CreateFamily", () => {
   let useCase: CreateFamily;
   let familyRepo: IFamilyRepository;
   let personRepo: IPersonRepository;
   let membershipRepo: IMembershipRepository;
+  let notifPrefRepo: INotificationPreferenceRepository;
 
   beforeEach(() => {
     familyRepo = mockFamilyRepo();
     personRepo = mockPersonRepo();
     membershipRepo = mockMembershipRepo();
-    useCase = new CreateFamily(familyRepo, personRepo, membershipRepo);
+    notifPrefRepo = mockNotifPrefRepo();
+    useCase = new CreateFamily(familyRepo, personRepo, membershipRepo, notifPrefRepo);
   });
 
   it("creates family, person, and owner membership", async () => {

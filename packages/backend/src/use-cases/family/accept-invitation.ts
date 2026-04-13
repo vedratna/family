@@ -3,6 +3,7 @@ import type { FamilyMembership, Person } from "@family-app/shared";
 import { NotFoundError } from "../../domain/errors";
 import type { IInvitationRepository } from "../../repositories/interfaces/invitation-repo";
 import type { IMembershipRepository } from "../../repositories/interfaces/membership-repo";
+import type { INotificationPreferenceRepository } from "../../repositories/interfaces/notification-repo";
 import type { IPersonRepository } from "../../repositories/interfaces/person-repo";
 
 interface AcceptInvitationInput {
@@ -22,6 +23,7 @@ export class AcceptInvitation {
     private readonly invitationRepo: IInvitationRepository,
     private readonly personRepo: IPersonRepository,
     private readonly membershipRepo: IMembershipRepository,
+    private readonly notifPrefRepo: INotificationPreferenceRepository,
   ) {}
 
   async execute(input: AcceptInvitationInput): Promise<AcceptInvitationResult> {
@@ -52,6 +54,7 @@ export class AcceptInvitation {
     await this.personRepo.create(person);
     await this.membershipRepo.create(membership);
     await this.invitationRepo.updateStatus(input.familyId, input.phone, "accepted");
+    await this.notifPrefRepo.setDefaults(input.userId, input.familyId);
 
     return { person, membership };
   }

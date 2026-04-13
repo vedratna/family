@@ -89,6 +89,12 @@ NEW_FAM_ID=$(echo "$CREATE_FAM" | python3 -c 'import json,sys; d=json.load(sys.s
 [ -n "$NEW_FAM_ID" ] || fail "createFamily returns family" "$CREATE_FAM"
 pass "Created first family (id: $NEW_FAM_ID)"
 
+# Verify default notification preferences were created
+PREFS=$(gql "{ notificationPreferences(familyId: \"$NEW_FAM_ID\") { category enabled } }" "$NEW_USER_ID")
+PREF_COUNT=$(echo "$PREFS" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d["data"]["notificationPreferences"]))')
+[ "$PREF_COUNT" = "4" ] || fail "Expected 4 default notification prefs, got $PREF_COUNT" "$PREFS"
+pass "Default notification preferences (4 categories) created on family creation"
+
 # Verify user now sees the family
 AFTER=$(gql '{ myFamilies { family { id name } role } }' "$NEW_USER_ID")
 echo "$AFTER" | grep -q "Test Family" || fail "myFamilies shows new family" "$AFTER"

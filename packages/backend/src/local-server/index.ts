@@ -144,9 +144,9 @@ const registerUseCase = new RegisterWithPhone(userRepo);
 const updateProfileUseCase = new UpdateUserProfile(userRepo);
 
 const getUserFamilies = new GetUserFamilies(membershipRepo, familyRepo);
-const createFamily = new CreateFamily(familyRepo, personRepo, membershipRepo);
+const createFamily = new CreateFamily(familyRepo, personRepo, membershipRepo, prefRepo);
 const inviteMember = new InviteMember(familyRepo, membershipRepo, invitationRepo);
-const acceptInvitation = new AcceptInvitation(invitationRepo, personRepo, membershipRepo);
+const acceptInvitation = new AcceptInvitation(invitationRepo, personRepo, membershipRepo, prefRepo);
 const addNonAppPerson = new AddNonAppPerson(personRepo);
 const updateMemberRole = new UpdateMemberRole(membershipRepo);
 const transferOwnership = new TransferOwnership(membershipRepo);
