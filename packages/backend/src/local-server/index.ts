@@ -277,6 +277,38 @@ const resolvers = {
       return user ?? null;
     },
 
+    // Pending invitations for current user (by their phone)
+    myInvitations: async (_: unknown, __: unknown, ctx: Context) => {
+      const user = await userRepo.getById(ctx.userId);
+      if (user === undefined) {
+        return [];
+      }
+      const invitations = await invitationRepo.getByPhone(user.phone);
+      const pending = invitations.filter((inv) => inv.status === "pending");
+
+      // Enrich with family name/theme and inviter display name
+      const enriched = await Promise.all(
+        pending.map(async (inv) => {
+          const [family, inviterPerson] = await Promise.all([
+            familyRepo.getById(inv.familyId),
+            personRepo.getById(inv.familyId, inv.invitedBy),
+          ]);
+          return {
+            familyId: inv.familyId,
+            familyName: family?.name ?? "Unknown Family",
+            familyThemeName: family?.themeName ?? "teal",
+            phone: inv.phone,
+            inviterName: inviterPerson?.name ?? "A family member",
+            relationshipToInviter: inv.relationshipToInviter,
+            role: inv.role,
+            status: inv.status,
+            createdAt: inv.createdAt,
+          };
+        }),
+      );
+      return enriched;
+    },
+
     // Notifications
     notificationPreferences: async (_: unknown, args: { familyId: string }, ctx: Context) => {
       const userId = await resolveUserId(ctx);

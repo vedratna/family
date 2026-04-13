@@ -3,6 +3,8 @@ import { useMutation, useQuery } from "urql";
 import {
   MY_FAMILIES_QUERY,
   CREATE_FAMILY_MUTATION,
+  MY_INVITATIONS_QUERY,
+  ACCEPT_INVITATION_MUTATION,
   REGISTER_MUTATION,
   USER_BY_PHONE_QUERY,
   FAMILY_FEED_QUERY,
@@ -70,6 +72,36 @@ export function useMyFamilies(pause = false) {
 export function useCreateFamily() {
   const [result, executeMutation] = useMutation(CREATE_FAMILY_MUTATION);
   return { createFamily: executeMutation, loading: result.fetching, error: result.error };
+}
+
+export interface InvitationWithContext {
+  familyId: string;
+  familyName: string;
+  familyThemeName: string;
+  phone: string;
+  inviterName: string;
+  relationshipToInviter: string;
+  role: string;
+  status: string;
+  createdAt: string;
+}
+
+export function useMyInvitations(pause = false) {
+  const [result, reexecute] = useQuery({
+    query: MY_INVITATIONS_QUERY,
+    pause,
+  });
+  return {
+    data: result.data as { myInvitations: InvitationWithContext[] } | undefined,
+    fetching: result.fetching,
+    error: result.error,
+    reexecute,
+  };
+}
+
+export function useAcceptInvitation() {
+  const [result, executeMutation] = useMutation(ACCEPT_INVITATION_MUTATION);
+  return { acceptInvitation: executeMutation, loading: result.fetching, error: result.error };
 }
 
 // ─── Auth ───

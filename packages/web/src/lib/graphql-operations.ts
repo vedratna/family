@@ -18,6 +18,31 @@ export const CREATE_FAMILY_MUTATION = `
   }
 `;
 
+export const MY_INVITATIONS_QUERY = `
+  query MyInvitations {
+    myInvitations {
+      familyId
+      familyName
+      familyThemeName
+      phone
+      inviterName
+      relationshipToInviter
+      role
+      status
+      createdAt
+    }
+  }
+`;
+
+export const ACCEPT_INVITATION_MUTATION = `
+  mutation AcceptInvitation($familyId: ID!, $phone: String!, $displayName: String!) {
+    acceptInvitation(familyId: $familyId, phone: $phone, displayName: $displayName) {
+      person { id name }
+      role
+    }
+  }
+`;
+
 // ─── Feed / Post Queries ───
 
 export const FAMILY_FEED_QUERY = `

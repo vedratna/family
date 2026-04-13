@@ -120,6 +120,12 @@ INVITED_ID=$(echo "$REG_INVITED" | python3 -c 'import json,sys; d=json.load(sys.
 [ -n "$INVITED_ID" ] || fail "Invited user can register" "$REG_INVITED"
 pass "Invited user registered with invited phone"
 
+# Invitee queries their pending invitations (myInvitations)
+MY_INV=$(gql '{ myInvitations { familyId familyName inviterName role } }' "$INVITED_ID")
+echo "$MY_INV" | grep -q "Disney Family" || fail "myInvitations shows Disney Family" "$MY_INV"
+echo "$MY_INV" | grep -q "Mickey Mouse" || fail "myInvitations shows inviter name" "$MY_INV"
+pass "Invitee sees invitation with family + inviter context"
+
 # Invitee accepts invitation
 ACCEPT=$(gql "mutation { acceptInvitation(familyId: \"family-disney\", phone: \"$INVITE_PHONE\", displayName: \"Invited B\") { person { id name } role } }" "$INVITED_ID")
 echo "$ACCEPT" | grep -q '"role":"editor"' || fail "Accept invitation returns role" "$ACCEPT"

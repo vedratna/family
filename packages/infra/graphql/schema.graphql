@@ -30,6 +30,9 @@ type Query {
 
   # User lookup
   userByPhone(phone: String!): User
+
+  # Pending invitations for current user (by phone)
+  myInvitations: [InvitationWithContext!]!
 }
 
 type Mutation {
@@ -127,6 +130,18 @@ type Invitation {
   familyId: ID!
   phone: String!
   invitedBy: String!
+  relationshipToInviter: String!
+  role: String!
+  status: String!
+  createdAt: String!
+}
+
+type InvitationWithContext {
+  familyId: ID!
+  familyName: String!
+  familyThemeName: String!
+  phone: String!
+  inviterName: String!
   relationshipToInviter: String!
   role: String!
   status: String!
