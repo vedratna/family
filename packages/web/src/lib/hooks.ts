@@ -229,11 +229,11 @@ export function useEventDetail(familyId: string, date: string, eventId: string) 
   return { data: result.data as unknown, fetching: result.fetching, error: result.error };
 }
 
-export function useEventRSVPs(eventId: string) {
+export function useEventRSVPs(eventId: string, familyId: string) {
   const [result, reexecute] = useQuery({
     query: EVENT_RSVPS_QUERY,
-    variables: { eventId },
-    pause: !eventId,
+    variables: { eventId, familyId },
+    pause: !eventId || !familyId,
   });
   return {
     data: result.data as unknown,

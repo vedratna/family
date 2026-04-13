@@ -108,7 +108,12 @@ async function resolveRequesterRole(
 
 async function handleMyFamilies(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
   const userId = await resolveUserId(event);
-  return getUserFamilies.execute(userId);
+  const results = await getUserFamilies.execute(userId);
+  return results.map((r) => ({
+    family: r.family,
+    role: r.membership.role,
+    personId: r.membership.personId,
+  }));
 }
 
 async function handleFamilyMembers(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {

@@ -139,8 +139,8 @@ export const EVENT_DETAIL_QUERY = `
 `;
 
 export const EVENT_RSVPS_QUERY = `
-  query EventRSVPs($eventId: ID!) {
-    eventRSVPs(eventId: $eventId) {
+  query EventRSVPs($eventId: ID!, $familyId: ID!) {
+    eventRSVPs(eventId: $eventId, familyId: $familyId) {
       personName
       eventId personId status updatedAt
     }

@@ -143,15 +143,22 @@ describe("family handler", () => {
 
   // --- myFamilies ---
   describe("myFamilies", () => {
-    it("resolves userId and returns families", async () => {
+    it("resolves userId and returns families with personId", async () => {
       mockResolveUserId("u1");
-      const families = [{ id: "f1", name: "Smith" }];
+      const families = [
+        {
+          family: { id: "f1", name: "Smith" },
+          membership: { personId: "p1", role: "admin", familyId: "f1" },
+        },
+      ];
       mockGetUserFamiliesExecute.mockResolvedValue(families);
 
       const result = await handler(createEvent("myFamilies") as any);
 
       expect(mockGetUserFamiliesExecute).toHaveBeenCalledWith("u1");
-      expect(result).toEqual(families);
+      expect(result).toEqual([
+        { family: { id: "f1", name: "Smith" }, role: "admin", personId: "p1" },
+      ]);
     });
 
     it("throws when user not found", async () => {

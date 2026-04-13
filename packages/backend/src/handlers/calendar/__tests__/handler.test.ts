@@ -11,6 +11,8 @@ const {
   mockEditEventExecute,
   mockDeleteEventExecute,
   mockRSVPEventExecute,
+  mockPersonRepoGetByFamilyId,
+  mockEventRSVPRepoGetByEvent,
 } = vi.hoisted(() => ({
   mockGetByCognitoSub: vi.fn(),
   mockGetByUserId: vi.fn(),
@@ -21,6 +23,8 @@ const {
   mockEditEventExecute: vi.fn(),
   mockDeleteEventExecute: vi.fn(),
   mockRSVPEventExecute: vi.fn(),
+  mockPersonRepoGetByFamilyId: vi.fn(),
+  mockEventRSVPRepoGetByEvent: vi.fn(),
 }));
 
 vi.mock("../../../repositories/dynamodb/user-repo", () => ({
@@ -32,6 +36,7 @@ vi.mock("../../../repositories/dynamodb/user-repo", () => ({
 vi.mock("../../../repositories/dynamodb/person-repo", () => ({
   DynamoPersonRepository: vi.fn().mockImplementation(() => ({
     getByUserId: mockGetByUserId,
+    getByFamilyId: mockPersonRepoGetByFamilyId,
   })),
 }));
 
@@ -48,7 +53,9 @@ vi.mock("../../../repositories/dynamodb/event-repo", () => ({
 }));
 
 vi.mock("../../../repositories/dynamodb/event-rsvp-repo", () => ({
-  DynamoEventRSVPRepository: vi.fn().mockImplementation(() => ({})),
+  DynamoEventRSVPRepository: vi.fn().mockImplementation(() => ({
+    getByEvent: mockEventRSVPRepoGetByEvent,
+  })),
 }));
 
 vi.mock("../../../use-cases/calendar", () => ({
@@ -100,31 +107,52 @@ function mockResolveRequester(personId = "p1", role = "admin" as const) {
   mockGetByFamilyAndPerson.mockResolvedValue({ role });
 }
 
+function mockPersonNames(familyId: string, persons: { id: string; name: string }[]) {
+  mockPersonRepoGetByFamilyId.mockImplementation((fId: string) => {
+    if (fId === familyId) return Promise.resolve(persons);
+    return Promise.resolve([]);
+  });
+}
+
 describe("calendar handler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPersonRepoGetByFamilyId.mockResolvedValue([]);
   });
 
   // --- familyEvents ---
   describe("familyEvents", () => {
-    it("returns events with required args only", async () => {
-      const events = [{ id: "e1" }];
+    it("returns enriched events with creatorName", async () => {
+      mockPersonNames("f1", [{ id: "creator1", name: "Alice" }]);
+      const events = [
+        {
+          id: "e1",
+          familyId: "f1",
+          creatorPersonId: "creator1",
+          title: "Birthday",
+          eventType: "birthday",
+          startDate: "2024-01-15",
+          createdAt: "2024-01-01",
+        },
+      ];
       mockGetFamilyEventsExecute.mockResolvedValue(events);
 
-      const result = await handler(
+      const result = (await handler(
         createEvent("familyEvents", {
           familyId: "f1",
           startDate: "2024-01-01",
           endDate: "2024-01-31",
-        }) as any,
-      );
+        }) as Parameters<typeof handler>[0],
+      )) as { creatorName: string }[];
 
       expect(mockGetFamilyEventsExecute).toHaveBeenCalledWith({
         familyId: "f1",
         startDate: "2024-01-01",
         endDate: "2024-01-31",
       });
-      expect(result).toEqual(events);
+      expect(result).toHaveLength(1);
+      const firstEvent = result[0] as { creatorName: string };
+      expect(firstEvent.creatorName).toBe("Alice");
     });
 
     it("passes eventType when provided as string", async () => {
@@ -136,7 +164,7 @@ describe("calendar handler", () => {
           startDate: "2024-01-01",
           endDate: "2024-01-31",
           eventType: "birthday",
-        }) as any,
+        }) as Parameters<typeof handler>[0],
       );
 
       expect(mockGetFamilyEventsExecute).toHaveBeenCalledWith({
@@ -156,7 +184,7 @@ describe("calendar handler", () => {
           startDate: "2024-01-01",
           endDate: "2024-01-31",
           eventType: 123,
-        }) as any,
+        }) as Parameters<typeof handler>[0],
       );
 
       expect(mockGetFamilyEventsExecute).toHaveBeenCalledWith({
@@ -169,38 +197,92 @@ describe("calendar handler", () => {
 
   // --- eventDetail ---
   describe("eventDetail", () => {
-    it("returns event from repo", async () => {
-      const event = { id: "e1", title: "Birthday" };
+    it("returns enriched event from repo", async () => {
+      mockPersonNames("f1", [{ id: "creator1", name: "Bob" }]);
+      const event = {
+        id: "e1",
+        familyId: "f1",
+        creatorPersonId: "creator1",
+        title: "Birthday",
+        eventType: "birthday",
+        startDate: "2024-01-15",
+        createdAt: "2024-01-01",
+      };
       mockEventRepoGetById.mockResolvedValue(event);
+
+      const result = (await handler(
+        createEvent("eventDetail", {
+          familyId: "f1",
+          date: "2024-01-15",
+          eventId: "e1",
+        }) as Parameters<typeof handler>[0],
+      )) as { creatorName: string } | null;
+
+      expect(mockEventRepoGetById).toHaveBeenCalledWith("f1", "2024-01-15", "e1");
+      expect(result).not.toBeNull();
+      const detail = result as { creatorName: string };
+      expect(detail.creatorName).toBe("Bob");
+    });
+
+    it("returns null when event not found", async () => {
+      mockEventRepoGetById.mockResolvedValue(undefined);
 
       const result = await handler(
         createEvent("eventDetail", {
           familyId: "f1",
           date: "2024-01-15",
           eventId: "e1",
-        }) as any,
+        }) as Parameters<typeof handler>[0],
       );
 
-      expect(mockEventRepoGetById).toHaveBeenCalledWith("f1", "2024-01-15", "e1");
-      expect(result).toEqual(event);
+      expect(result).toBeNull();
+    });
+  });
+
+  // --- eventRSVPs ---
+  describe("eventRSVPs", () => {
+    it("returns enriched RSVPs with personName", async () => {
+      mockPersonNames("f1", [{ id: "person1", name: "Charlie" }]);
+      mockEventRSVPRepoGetByEvent.mockResolvedValue([
+        { eventId: "e1", personId: "person1", status: "going", updatedAt: "2024-01-01" },
+      ]);
+
+      const result = (await handler(
+        createEvent("eventRSVPs", { eventId: "e1", familyId: "f1" }) as Parameters<
+          typeof handler
+        >[0],
+      )) as { personName: string }[];
+
+      expect(result).toHaveLength(1);
+      const firstRSVP = result[0] as { personName: string };
+      expect(firstRSVP.personName).toBe("Charlie");
     });
   });
 
   // --- createEvent ---
   describe("createEvent", () => {
-    it("creates event with required fields", async () => {
-      mockResolveRequester("p1", "admin" as any);
-      const created = { id: "e1" };
+    it("creates event and returns enriched result with creatorName", async () => {
+      mockResolveRequester("p1", "admin" as Parameters<typeof mockResolveRequester>[1]);
+      mockPersonNames("f1", [{ id: "p1", name: "Diana" }]);
+      const created = {
+        id: "e1",
+        familyId: "f1",
+        creatorPersonId: "p1",
+        title: "Party",
+        eventType: "celebration",
+        startDate: "2024-06-15",
+        createdAt: "2024-01-01",
+      };
       mockCreateEventExecute.mockResolvedValue(created);
 
-      const result = await handler(
+      const result = (await handler(
         createEvent("createEvent", {
           familyId: "f1",
           title: "Party",
           eventType: "celebration",
           startDate: "2024-06-15",
-        }) as any,
-      );
+        }) as Parameters<typeof handler>[0],
+      )) as { creatorName: string };
 
       expect(mockCreateEventExecute).toHaveBeenCalledWith({
         familyId: "f1",
@@ -210,12 +292,21 @@ describe("calendar handler", () => {
         startDate: "2024-06-15",
         requesterRole: "admin",
       });
-      expect(result).toEqual(created);
+      expect(result.creatorName).toBe("Diana");
     });
 
     it("passes optional fields when provided as strings", async () => {
-      mockResolveRequester("p1", "admin" as any);
-      mockCreateEventExecute.mockResolvedValue({ id: "e1" });
+      mockResolveRequester("p1", "admin" as Parameters<typeof mockResolveRequester>[1]);
+      mockPersonNames("f1", [{ id: "p1", name: "Diana" }]);
+      mockCreateEventExecute.mockResolvedValue({
+        id: "e1",
+        familyId: "f1",
+        creatorPersonId: "p1",
+        title: "Party",
+        eventType: "celebration",
+        startDate: "2024-06-15",
+        createdAt: "2024-01-01",
+      });
 
       await handler(
         createEvent("createEvent", {
@@ -227,7 +318,7 @@ describe("calendar handler", () => {
           startTime: "18:00",
           location: "Home",
           recurrenceRule: "FREQ=YEARLY",
-        }) as any,
+        }) as Parameters<typeof handler>[0],
       );
 
       expect(mockCreateEventExecute).toHaveBeenCalledWith({
@@ -245,8 +336,17 @@ describe("calendar handler", () => {
     });
 
     it("does not pass optional fields when wrong types", async () => {
-      mockResolveRequester("p1", "admin" as any);
-      mockCreateEventExecute.mockResolvedValue({ id: "e1" });
+      mockResolveRequester("p1", "admin" as Parameters<typeof mockResolveRequester>[1]);
+      mockPersonNames("f1", [{ id: "p1", name: "Diana" }]);
+      mockCreateEventExecute.mockResolvedValue({
+        id: "e1",
+        familyId: "f1",
+        creatorPersonId: "p1",
+        title: "Party",
+        eventType: "celebration",
+        startDate: "2024-06-15",
+        createdAt: "2024-01-01",
+      });
 
       await handler(
         createEvent("createEvent", {
@@ -258,7 +358,7 @@ describe("calendar handler", () => {
           startTime: true,
           location: null,
           recurrenceRule: 0,
-        }) as any,
+        }) as Parameters<typeof handler>[0],
       );
 
       expect(mockCreateEventExecute).toHaveBeenCalledWith({
@@ -275,7 +375,7 @@ describe("calendar handler", () => {
   // --- editEvent ---
   describe("editEvent", () => {
     it("edits event and returns true", async () => {
-      mockResolveRequester("p1", "admin" as any);
+      mockResolveRequester("p1", "admin" as Parameters<typeof mockResolveRequester>[1]);
       mockEditEventExecute.mockResolvedValue(undefined);
 
       const updates = { title: "Updated Party" };
@@ -285,7 +385,7 @@ describe("calendar handler", () => {
           eventId: "e1",
           date: "2024-06-15",
           updates,
-        }) as any,
+        }) as Parameters<typeof handler>[0],
       );
 
       expect(mockEditEventExecute).toHaveBeenCalledWith({
@@ -302,7 +402,7 @@ describe("calendar handler", () => {
   // --- deleteEvent ---
   describe("deleteEvent", () => {
     it("deletes event and returns true", async () => {
-      mockResolveRequester("p1", "admin" as any);
+      mockResolveRequester("p1", "admin" as Parameters<typeof mockResolveRequester>[1]);
       mockDeleteEventExecute.mockResolvedValue(undefined);
 
       const result = await handler(
@@ -310,7 +410,7 @@ describe("calendar handler", () => {
           familyId: "f1",
           date: "2024-06-15",
           eventId: "e1",
-        }) as any,
+        }) as Parameters<typeof handler>[0],
       );
 
       expect(mockDeleteEventExecute).toHaveBeenCalledWith("f1", "2024-06-15", "e1", "admin");
@@ -320,25 +420,26 @@ describe("calendar handler", () => {
 
   // --- rsvpEvent ---
   describe("rsvpEvent", () => {
-    it("rsvps to event with resolved personId", async () => {
+    it("rsvps to event and returns enriched result with personName", async () => {
       mockResolveRequester("p1");
-      const rsvp = { id: "rsvp-1" };
+      mockPersonNames("f1", [{ id: "p1", name: "Eve" }]);
+      const rsvp = { eventId: "e1", personId: "p1", status: "going", updatedAt: "2024-01-01" };
       mockRSVPEventExecute.mockResolvedValue(rsvp);
 
-      const result = await handler(
+      const result = (await handler(
         createEvent("rsvpEvent", {
           familyId: "f1",
           eventId: "e1",
           status: "going",
-        }) as any,
-      );
+        }) as Parameters<typeof handler>[0],
+      )) as { personName: string };
 
       expect(mockRSVPEventExecute).toHaveBeenCalledWith({
         eventId: "e1",
         personId: "p1",
         status: "going",
       });
-      expect(result).toEqual(rsvp);
+      expect(result.personName).toBe("Eve");
     });
   });
 
@@ -354,7 +455,7 @@ describe("calendar handler", () => {
             title: "X",
             eventType: "t",
             startDate: "d",
-          }) as any,
+          }) as Parameters<typeof handler>[0],
         ),
       ).rejects.toThrow("USER_NOT_FOUND");
     });
@@ -370,7 +471,7 @@ describe("calendar handler", () => {
             title: "X",
             eventType: "t",
             startDate: "d",
-          }) as any,
+          }) as Parameters<typeof handler>[0],
         ),
       ).rejects.toThrow("MEMBER_NOT_FOUND: Caller is not a member");
     });
@@ -387,7 +488,7 @@ describe("calendar handler", () => {
             title: "X",
             eventType: "t",
             startDate: "d",
-          }) as any,
+          }) as Parameters<typeof handler>[0],
         ),
       ).rejects.toThrow("MEMBER_NOT_FOUND: No membership found");
     });
@@ -401,22 +502,28 @@ describe("calendar handler", () => {
         identity: undefined,
       } as unknown;
 
-      await expect(handler(event as any)).rejects.toThrow("USER_NOT_FOUND");
+      await expect(handler(event as Parameters<typeof handler>[0])).rejects.toThrow(
+        "USER_NOT_FOUND",
+      );
       expect(mockGetByCognitoSub).toHaveBeenCalledWith("");
     });
   });
 
   // --- unknown field ---
   it("throws on unknown fieldName", async () => {
-    await expect(handler(createEvent("unknownField") as any)).rejects.toThrow(
-      "Unknown field: unknownField",
-    );
+    await expect(
+      handler(createEvent("unknownField") as Parameters<typeof handler>[0]),
+    ).rejects.toThrow("Unknown field: unknownField");
   });
 
   // --- DomainError ---
   it("wraps DomainError with code prefix", async () => {
     mockResolveRequester();
-    const domainErr = new (DomainError as any)("overlap", "CALENDAR_CONFLICT");
+    mockPersonNames("f1", [{ id: "p1", name: "Test" }]);
+    const domainErr = new (DomainError as unknown as new (msg: string, code: string) => Error)(
+      "overlap",
+      "CALENDAR_CONFLICT",
+    );
     mockCreateEventExecute.mockRejectedValue(domainErr);
 
     await expect(
@@ -426,13 +533,14 @@ describe("calendar handler", () => {
           title: "X",
           eventType: "t",
           startDate: "d",
-        }) as any,
+        }) as Parameters<typeof handler>[0],
       ),
     ).rejects.toThrow("CALENDAR_CONFLICT: overlap");
   });
 
   it("re-throws non-DomainError errors as-is", async () => {
     mockResolveRequester();
+    mockPersonNames("f1", [{ id: "p1", name: "Test" }]);
     mockCreateEventExecute.mockRejectedValue(new Error("boom"));
 
     await expect(
@@ -442,7 +550,7 @@ describe("calendar handler", () => {
           title: "X",
           eventType: "t",
           startDate: "d",
-        }) as any,
+        }) as Parameters<typeof handler>[0],
       ),
     ).rejects.toThrow("boom");
   });
