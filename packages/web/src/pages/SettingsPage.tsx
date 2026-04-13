@@ -1,6 +1,8 @@
 import type { ThemeName } from "@family-app/shared";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 
+import { formatErrorMessage } from "../lib/error-utils";
 import { useUpdateFamilyTheme } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import { useAuth } from "../providers/AuthProvider";
@@ -22,6 +24,7 @@ export function SettingsPage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { updateFamilyTheme } = useUpdateFamilyTheme();
+  const [themeError, setThemeError] = useState<string | null>(null);
 
   function handleLogout() {
     logout();
@@ -29,8 +32,13 @@ export function SettingsPage() {
   }
 
   function handleThemeChange(themeName: ThemeName) {
+    setThemeError(null);
     if (isApiMode()) {
-      void updateFamilyTheme({ familyId: activeFamilyId, themeName }).then(() => {
+      void updateFamilyTheme({ familyId: activeFamilyId, themeName }).then((result) => {
+        if (result.error) {
+          setThemeError(formatErrorMessage(result.error));
+          return;
+        }
         refetchFamilies();
       });
     } else {
@@ -81,6 +89,7 @@ export function SettingsPage() {
             />
           ))}
         </div>
+        {themeError !== null && <p className="text-sm text-red-600 mt-2">{themeError}</p>}
         <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
           Current: {activeThemeName} (theme is set per family)
         </p>

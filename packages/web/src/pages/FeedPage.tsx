@@ -2,6 +2,9 @@ import { useState, useMemo, type SyntheticEvent } from "react";
 import { Link } from "react-router";
 import { useQuery } from "urql";
 
+import { Loading } from "../components/Loading";
+import { QueryError } from "../components/QueryError";
+import { formatErrorMessage } from "../lib/error-utils";
 import { FAMILY_FEED_QUERY, FAMILY_EVENTS_QUERY } from "../lib/graphql-operations";
 import { useCreatePost } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
@@ -112,7 +115,7 @@ export function FeedPage() {
     d.setDate(d.getDate() + 90);
     return d.toISOString().slice(0, 10);
   }, []);
-  const [eventsResult] = useQuery({
+  const [eventsResult, reexecuteEvents] = useQuery({
     query: FAMILY_EVENTS_QUERY,
     variables: { familyId: activeFamilyId, startDate: today, endDate: ninetyDaysOut },
     pause: !isApiMode() || !activeFamilyId,
@@ -187,12 +190,7 @@ export function FeedPage() {
         input: { familyId: activeFamilyId, textContent: newPostText.trim() },
       }).then((result) => {
         if (result.error) {
-          const msg = result.error.message.replace("[GraphQL] ", "");
-          if (msg.includes("ActivationGateError") || msg.includes("at least 2")) {
-            setPostError("Invite at least one more member before posting.");
-          } else {
-            setPostError(msg);
-          }
+          setPostError(formatErrorMessage(result.error));
           return;
         }
         reexecuteFeed({ requestPolicy: "network-only" });
@@ -209,10 +207,36 @@ export function FeedPage() {
     }
   }
 
+  if (feedResult.error) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <QueryError
+          error={feedResult.error}
+          onRetry={() => {
+            reexecuteFeed({ requestPolicy: "network-only" });
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (eventsResult.error) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <QueryError
+          error={eventsResult.error}
+          onRetry={() => {
+            reexecuteEvents({ requestPolicy: "network-only" });
+          }}
+        />
+      </div>
+    );
+  }
+
   if (feedItems === null) {
     return (
       <div className="max-w-2xl mx-auto p-4">
-        <p className="text-sm text-[var(--color-text-secondary)]">Loading feed...</p>
+        <Loading label="Loading feed..." />
       </div>
     );
   }

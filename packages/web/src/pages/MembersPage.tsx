@@ -3,6 +3,9 @@ import { useMemo, useState, type SyntheticEvent } from "react";
 import { Link } from "react-router";
 import { useQuery } from "urql";
 
+import { Loading } from "../components/Loading";
+import { QueryError } from "../components/QueryError";
+import { formatErrorMessage } from "../lib/error-utils";
 import { FAMILY_MEMBERS_QUERY } from "../lib/graphql-operations";
 import { useInviteMember } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
@@ -29,6 +32,7 @@ export function MembersPage() {
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState("");
   const [role, setRole] = useState<Role>("viewer");
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const [membersResult, reexecuteMembers] = useQuery({
     query: FAMILY_MEMBERS_QUERY,
@@ -62,6 +66,7 @@ export function MembersPage() {
   function handleInvite(e: SyntheticEvent) {
     e.preventDefault();
     if (!phone.trim() || !name.trim()) return;
+    setInviteError(null);
 
     const input = {
       familyId: activeFamilyId,
@@ -73,18 +78,42 @@ export function MembersPage() {
     };
 
     if (isApiMode()) {
-      void inviteMember({ input }).then(() => {
+      void inviteMember({ input }).then((result) => {
+        if (result.error) {
+          setInviteError(formatErrorMessage(result.error));
+          return;
+        }
         reexecuteMembers({ requestPolicy: "network-only" });
+        setPhone("");
+        setName("");
+        setRelationship("");
+        setRole("viewer");
+        setShowForm(false);
       });
     } else {
       console.log("[mock] inviteMember:", input);
+      setPhone("");
+      setName("");
+      setRelationship("");
+      setRole("viewer");
+      setShowForm(false);
     }
+  }
 
-    setPhone("");
-    setName("");
-    setRelationship("");
-    setRole("viewer");
-    setShowForm(false);
+  if (membersResult.error) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <Link to="/settings" className="text-sm text-[var(--color-accent-primary)] hover:underline">
+          &larr; Back to Settings
+        </Link>
+        <QueryError
+          error={membersResult.error}
+          onRetry={() => {
+            reexecuteMembers({ requestPolicy: "network-only" });
+          }}
+        />
+      </div>
+    );
   }
 
   if (members === null) {
@@ -93,7 +122,7 @@ export function MembersPage() {
         <Link to="/settings" className="text-sm text-[var(--color-accent-primary)] hover:underline">
           &larr; Back to Settings
         </Link>
-        <p className="mt-4 text-sm text-[var(--color-text-secondary)]">Loading members...</p>
+        <Loading label="Loading members..." />
       </div>
     );
   }
@@ -164,6 +193,7 @@ export function MembersPage() {
               </option>
             ))}
           </select>
+          {inviteError !== null && <p className="text-sm text-red-600 mt-2">{inviteError}</p>}
           <div className="flex justify-end">
             <button
               type="submit"

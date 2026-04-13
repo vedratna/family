@@ -2,6 +2,9 @@ import { useMemo, useState, type SyntheticEvent } from "react";
 import { useParams, Link } from "react-router";
 import { useQuery } from "urql";
 
+import { Loading } from "../components/Loading";
+import { QueryError } from "../components/QueryError";
+import { formatErrorMessage } from "../lib/error-utils";
 import {
   POST_DETAIL_QUERY,
   POST_COMMENTS_QUERY,
@@ -46,8 +49,9 @@ export function PostDetailPage() {
   const { addComment, loading: commentLoading } = useAddComment();
 
   const [commentText, setCommentText] = useState("");
+  const [commentError, setCommentError] = useState<string | null>(null);
 
-  const [postResult] = useQuery({
+  const [postResult, reexecutePost] = useQuery({
     query: POST_DETAIL_QUERY,
     variables: { postId: postId ?? "", familyId: activeFamilyId },
     pause: !isApiMode() || postId === undefined || !activeFamilyId,
@@ -59,7 +63,7 @@ export function PostDetailPage() {
     pause: !isApiMode() || postId === undefined,
   });
 
-  const [reactionsResult] = useQuery({
+  const [reactionsResult, reexecuteReactions] = useQuery({
     query: POST_REACTIONS_QUERY,
     variables: { postId: postId ?? "" },
     pause: !isApiMode() || postId === undefined,
@@ -98,13 +102,61 @@ export function PostDetailPage() {
 
   const loading = isApiMode() && (postResult.fetching || commentsResult.fetching);
 
+  if (postResult.error) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <Link to="/feed" className="text-sm text-[var(--color-accent-primary)] hover:underline">
+          &larr; Back to Feed
+        </Link>
+        <QueryError
+          error={postResult.error}
+          onRetry={() => {
+            reexecutePost({ requestPolicy: "network-only" });
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (commentsResult.error) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <Link to="/feed" className="text-sm text-[var(--color-accent-primary)] hover:underline">
+          &larr; Back to Feed
+        </Link>
+        <QueryError
+          error={commentsResult.error}
+          onRetry={() => {
+            reexecuteComments({ requestPolicy: "network-only" });
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (reactionsResult.error) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <Link to="/feed" className="text-sm text-[var(--color-accent-primary)] hover:underline">
+          &larr; Back to Feed
+        </Link>
+        <QueryError
+          error={reactionsResult.error}
+          onRetry={() => {
+            reexecuteReactions({ requestPolicy: "network-only" });
+          }}
+        />
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto p-4">
         <Link to="/feed" className="text-sm text-[var(--color-accent-primary)] hover:underline">
           &larr; Back to Feed
         </Link>
-        <p className="mt-4 text-[var(--color-text-secondary)]">Loading...</p>
+        <Loading />
       </div>
     );
   }
@@ -127,18 +179,23 @@ export function PostDetailPage() {
   function handleAddComment(e: SyntheticEvent) {
     e.preventDefault();
     if (!commentText.trim()) return;
+    setCommentError(null);
 
     if (isApiMode()) {
       void addComment({
         input: { postId, familyId: activeFamilyId, textContent: commentText.trim() },
-      }).then(() => {
+      }).then((result) => {
+        if (result.error) {
+          setCommentError(formatErrorMessage(result.error));
+          return;
+        }
         reexecuteComments({ requestPolicy: "network-only" });
+        setCommentText("");
       });
     } else {
       console.log("[mock] addComment:", { postId, textContent: commentText.trim() });
+      setCommentText("");
     }
-
-    setCommentText("");
   }
 
   return (
@@ -191,23 +248,26 @@ export function PostDetailPage() {
         </div>
 
         {/* Add Comment Form */}
-        <form onSubmit={handleAddComment} className="mt-4 flex gap-2">
-          <input
-            type="text"
-            value={commentText}
-            onChange={(e) => {
-              setCommentText(e.target.value);
-            }}
-            placeholder="Write a comment..."
-            className="flex-1 px-3 py-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
-          />
-          <button
-            type="submit"
-            disabled={commentLoading || !commentText.trim()}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-accent-on)] hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {commentLoading ? "..." : "Send"}
-          </button>
+        <form onSubmit={handleAddComment} className="mt-4">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={commentText}
+              onChange={(e) => {
+                setCommentText(e.target.value);
+              }}
+              placeholder="Write a comment..."
+              className="flex-1 px-3 py-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+            />
+            <button
+              type="submit"
+              disabled={commentLoading || !commentText.trim()}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-accent-on)] hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {commentLoading ? "..." : "Send"}
+            </button>
+          </div>
+          {commentError !== null && <p className="text-sm text-red-600 mt-2">{commentError}</p>}
         </form>
       </div>
     </div>

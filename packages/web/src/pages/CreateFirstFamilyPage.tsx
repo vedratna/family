@@ -2,6 +2,7 @@ import type { ThemeName } from "@family-app/shared";
 import { useState, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router";
 
+import { formatErrorMessage } from "../lib/error-utils";
 import {
   useCreateFamily,
   useMyInvitations,
@@ -54,7 +55,7 @@ function InvitationCard({
       displayName,
     });
     if (result.error) {
-      setError(result.error.message.replace("[GraphQL] ", ""));
+      setError(formatErrorMessage(result.error));
       return;
     }
     onAccepted();
@@ -122,7 +123,7 @@ export function CreateFirstFamilyPage() {
     setError(null);
     const result = await createFamily({ name: familyName.trim(), themeName });
     if (result.error) {
-      setError(result.error.message.replace("[GraphQL] ", ""));
+      setError(formatErrorMessage(result.error));
       return;
     }
     refetchFamilies();

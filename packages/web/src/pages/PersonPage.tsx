@@ -3,6 +3,9 @@ import { useMemo, useState, type SyntheticEvent } from "react";
 import { useParams, Link } from "react-router";
 import { useQuery } from "urql";
 
+import { Loading } from "../components/Loading";
+import { QueryError } from "../components/QueryError";
+import { formatErrorMessage } from "../lib/error-utils";
 import { FAMILY_RELATIONSHIPS_QUERY, FAMILY_MEMBERS_QUERY } from "../lib/graphql-operations";
 import { useCreateRelationship } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
@@ -37,6 +40,7 @@ export function PersonPage() {
   const [relType, setRelType] = useState<RelationshipType>("parent-child");
   const [aToBLabel, setAToBLabel] = useState("");
   const [bToALabel, setBToALabel] = useState("");
+  const [relError, setRelError] = useState<string | null>(null);
 
   const [relsResult, reexecuteRels] = useQuery({
     query: FAMILY_RELATIONSHIPS_QUERY,
@@ -44,7 +48,7 @@ export function PersonPage() {
     pause: !isApiMode() || !activeFamilyId,
   });
 
-  const [membersResult] = useQuery({
+  const [membersResult, reexecuteMembers] = useQuery({
     query: FAMILY_MEMBERS_QUERY,
     variables: { familyId: activeFamilyId },
     pause: !isApiMode() || !activeFamilyId,
@@ -96,6 +100,7 @@ export function PersonPage() {
   function handleAddRelationship(e: SyntheticEvent) {
     e.preventDefault();
     if (!otherPersonId || !aToBLabel.trim() || !bToALabel.trim()) return;
+    setRelError(null);
 
     const input = {
       familyId: activeFamilyId,
@@ -107,18 +112,58 @@ export function PersonPage() {
     };
 
     if (isApiMode()) {
-      void createRelationship({ input }).then(() => {
+      void createRelationship({ input }).then((result) => {
+        if (result.error) {
+          setRelError(formatErrorMessage(result.error));
+          return;
+        }
         reexecuteRels({ requestPolicy: "network-only" });
+        setOtherPersonId("");
+        setRelType("parent-child");
+        setAToBLabel("");
+        setBToALabel("");
+        setShowForm(false);
       });
     } else {
       console.log("[mock] createRelationship:", input);
+      setOtherPersonId("");
+      setRelType("parent-child");
+      setAToBLabel("");
+      setBToALabel("");
+      setShowForm(false);
     }
+  }
 
-    setOtherPersonId("");
-    setRelType("parent-child");
-    setAToBLabel("");
-    setBToALabel("");
-    setShowForm(false);
+  if (relsResult.error) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <Link to="/tree" className="text-sm text-[var(--color-accent-primary)] hover:underline">
+          &larr; Back to Tree
+        </Link>
+        <QueryError
+          error={relsResult.error}
+          onRetry={() => {
+            reexecuteRels({ requestPolicy: "network-only" });
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (membersResult.error) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <Link to="/tree" className="text-sm text-[var(--color-accent-primary)] hover:underline">
+          &larr; Back to Tree
+        </Link>
+        <QueryError
+          error={membersResult.error}
+          onRetry={() => {
+            reexecuteMembers({ requestPolicy: "network-only" });
+          }}
+        />
+      </div>
+    );
   }
 
   if (loading) {
@@ -127,7 +172,7 @@ export function PersonPage() {
         <Link to="/tree" className="text-sm text-[var(--color-accent-primary)] hover:underline">
           &larr; Back to Tree
         </Link>
-        <p className="mt-4 text-[var(--color-text-secondary)]">Loading...</p>
+        <Loading />
       </div>
     );
   }
@@ -213,6 +258,7 @@ export function PersonPage() {
             placeholder="Label B to A (e.g. Son)"
             className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
           />
+          {relError !== null && <p className="text-sm text-red-600 mt-2">{relError}</p>}
           <div className="flex justify-end">
             <button
               type="submit"
