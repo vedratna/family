@@ -2,6 +2,9 @@ import type { Chore, Person } from "@family-app/shared";
 import { useMemo, useState, type SyntheticEvent } from "react";
 import { useQuery } from "urql";
 
+import { Loading } from "../components/Loading";
+import { QueryError } from "../components/QueryError";
+import { formatErrorMessage } from "../lib/error-utils";
 import { FAMILY_CHORES_QUERY, FAMILY_MEMBERS_QUERY } from "../lib/graphql-operations";
 import { useCreateChore, useCompleteChore } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
@@ -25,6 +28,8 @@ export function ChoresPage() {
   const [title, setTitle] = useState("");
   const [assigneePersonId, setAssigneePersonId] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [choreError, setChoreError] = useState<string | null>(null);
+  const [completeError, setCompleteError] = useState<string | null>(null);
 
   const [choresResult, reexecuteChores] = useQuery({
     query: FAMILY_CHORES_QUERY,
@@ -70,6 +75,7 @@ export function ChoresPage() {
   function handleCreateChore(e: SyntheticEvent) {
     e.preventDefault();
     if (!title.trim() || !assigneePersonId) return;
+    setChoreError(null);
 
     const input: Record<string, string> = {
       familyId: activeFamilyId,
@@ -79,22 +85,34 @@ export function ChoresPage() {
     if (dueDate) input.dueDate = dueDate;
 
     if (isApiMode()) {
-      void createChore({ input }).then(() => {
+      void createChore({ input }).then((result) => {
+        if (result.error) {
+          setChoreError(formatErrorMessage(result.error));
+          return;
+        }
         reexecuteChores({ requestPolicy: "network-only" });
+        setTitle("");
+        setAssigneePersonId("");
+        setDueDate("");
+        setShowForm(false);
       });
     } else {
       console.log("[mock] createChore:", input);
+      setTitle("");
+      setAssigneePersonId("");
+      setDueDate("");
+      setShowForm(false);
     }
-
-    setTitle("");
-    setAssigneePersonId("");
-    setDueDate("");
-    setShowForm(false);
   }
 
   function handleComplete(choreId: string) {
+    setCompleteError(null);
     if (isApiMode()) {
-      void completeChore({ familyId: activeFamilyId, choreId }).then(() => {
+      void completeChore({ familyId: activeFamilyId, choreId }).then((result) => {
+        if (result.error) {
+          setCompleteError(formatErrorMessage(result.error));
+          return;
+        }
         reexecuteChores({ requestPolicy: "network-only" });
       });
     } else {
@@ -102,10 +120,23 @@ export function ChoresPage() {
     }
   }
 
+  if (choresResult.error) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <QueryError
+          error={choresResult.error}
+          onRetry={() => {
+            reexecuteChores({ requestPolicy: "network-only" });
+          }}
+        />
+      </div>
+    );
+  }
+
   if (choreItems === null) {
     return (
       <div className="max-w-2xl mx-auto p-4">
-        <p className="text-sm text-[var(--color-text-secondary)]">Loading chores...</p>
+        <Loading label="Loading chores..." />
       </div>
     );
   }
@@ -160,6 +191,7 @@ export function ChoresPage() {
             }}
             className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
           />
+          {choreError !== null && <p className="text-sm text-red-600 mt-2">{choreError}</p>}
           <div className="flex justify-end">
             <button
               type="submit"
@@ -172,6 +204,7 @@ export function ChoresPage() {
         </form>
       )}
 
+      {completeError !== null && <p className="text-sm text-red-600 mb-3">{completeError}</p>}
       <div className="flex flex-col gap-3">
         {choreItems.map((chore) => (
           <div

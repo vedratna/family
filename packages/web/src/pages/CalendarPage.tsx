@@ -3,6 +3,9 @@ import { useMemo, useState, type SyntheticEvent } from "react";
 import { Link } from "react-router";
 import { useQuery } from "urql";
 
+import { Loading } from "../components/Loading";
+import { QueryError } from "../components/QueryError";
+import { formatErrorMessage } from "../lib/error-utils";
 import { FAMILY_EVENTS_QUERY } from "../lib/graphql-operations";
 import { useCreateEvent } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
@@ -31,6 +34,7 @@ export function CalendarPage() {
   const [startDate, setStartDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [location, setLocation] = useState("");
+  const [eventError, setEventError] = useState<string | null>(null);
 
   // Fetch events for a wide date range (1 year back, 1 year forward)
   const eventsStartDate = useMemo(() => {
@@ -71,6 +75,7 @@ export function CalendarPage() {
   function handleCreateEvent(e: SyntheticEvent) {
     e.preventDefault();
     if (!title.trim() || !startDate) return;
+    setEventError(null);
 
     const input: Record<string, string> = {
       familyId: activeFamilyId,
@@ -82,25 +87,47 @@ export function CalendarPage() {
     if (location.trim()) input.location = location.trim();
 
     if (isApiMode()) {
-      void createEvent({ input }).then(() => {
+      void createEvent({ input }).then((result) => {
+        if (result.error) {
+          setEventError(formatErrorMessage(result.error));
+          return;
+        }
         reexecuteEvents({ requestPolicy: "network-only" });
+        setTitle("");
+        setEventType("custom");
+        setStartDate("");
+        setStartTime("");
+        setLocation("");
+        setShowForm(false);
       });
     } else {
       console.log("[mock] createEvent:", input);
+      setTitle("");
+      setEventType("custom");
+      setStartDate("");
+      setStartTime("");
+      setLocation("");
+      setShowForm(false);
     }
+  }
 
-    setTitle("");
-    setEventType("custom");
-    setStartDate("");
-    setStartTime("");
-    setLocation("");
-    setShowForm(false);
+  if (eventsResult.error) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <QueryError
+          error={eventsResult.error}
+          onRetry={() => {
+            reexecuteEvents({ requestPolicy: "network-only" });
+          }}
+        />
+      </div>
+    );
   }
 
   if (sections === null) {
     return (
       <div className="max-w-2xl mx-auto p-4">
-        <p className="text-sm text-[var(--color-text-secondary)]">Loading events...</p>
+        <Loading label="Loading events..." />
       </div>
     );
   }
@@ -181,6 +208,7 @@ export function CalendarPage() {
             placeholder="Location (optional)"
             className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
           />
+          {eventError !== null && <p className="text-sm text-red-600 mt-2">{eventError}</p>}
           <div className="flex justify-end">
             <button
               type="submit"

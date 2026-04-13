@@ -3,6 +3,8 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { useQuery } from "urql";
 
+import { Loading } from "../components/Loading";
+import { QueryError } from "../components/QueryError";
 import { FAMILY_EVENTS_QUERY } from "../lib/graphql-operations";
 import { isApiMode } from "../lib/mode";
 import { toMonthDays } from "../lib/transforms";
@@ -42,7 +44,7 @@ export function CalendarMonthPage() {
     return d.toISOString().split("T")[0] ?? "";
   }, []);
 
-  const [eventsResult] = useQuery({
+  const [eventsResult, reexecuteEvents] = useQuery({
     query: FAMILY_EVENTS_QUERY,
     variables: { familyId: activeFamilyId, startDate: eventsStartDate, endDate: eventsEndDate },
     pause: !isApiMode() || !activeFamilyId,
@@ -100,10 +102,23 @@ export function CalendarMonthPage() {
     setSelectedDay(null);
   };
 
+  if (eventsResult.error) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <QueryError
+          error={eventsResult.error}
+          onRetry={() => {
+            reexecuteEvents({ requestPolicy: "network-only" });
+          }}
+        />
+      </div>
+    );
+  }
+
   if (days === null) {
     return (
       <div className="max-w-2xl mx-auto p-4">
-        <p className="text-sm text-[var(--color-text-secondary)]">Loading calendar...</p>
+        <Loading label="Loading calendar..." />
       </div>
     );
   }
