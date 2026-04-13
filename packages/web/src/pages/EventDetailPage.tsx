@@ -1,7 +1,9 @@
-import type { RSVPStatus } from "@family-app/shared";
+import type { RSVPStatus, FamilyEvent } from "@family-app/shared";
 import { useMemo } from "react";
 import { useParams, Link } from "react-router";
+import { useQuery } from "urql";
 
+import { EVENT_DETAIL_QUERY, EVENT_RSVPS_QUERY } from "../lib/graphql-operations";
 import { useRSVPEvent } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import { personName } from "../lib/transforms";
@@ -19,28 +21,75 @@ const RSVP_OPTIONS: { label: string; value: RSVPStatus }[] = [
   { label: "Can't", value: "not-going" },
 ];
 
+interface ApiRSVP {
+  eventId: string;
+  personId: string;
+  status: RSVPStatus;
+  updatedAt: string;
+}
+
 export function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>();
-  const { events, rsvps, persons } = useMockData();
+  const mockData = useMockData();
   const { rsvpEvent, loading: rsvpLoading } = useRSVPEvent();
 
-  const event = events.find((e) => e.id === eventId);
+  const [eventResult] = useQuery({
+    query: EVENT_DETAIL_QUERY,
+    variables: { eventId: eventId ?? "" },
+    pause: !isApiMode() || eventId === undefined,
+  });
+
+  const [rsvpsResult, reexecuteRsvps] = useQuery({
+    query: EVENT_RSVPS_QUERY,
+    variables: { eventId: eventId ?? "" },
+    pause: !isApiMode() || eventId === undefined,
+  });
+
+  const event = useMemo((): FamilyEvent | null => {
+    if (isApiMode()) {
+      const raw = eventResult.data as { event: FamilyEvent | null } | undefined;
+      return raw?.event ?? null;
+    }
+    return mockData.events.find((e) => e.id === eventId) ?? null;
+  }, [eventResult.data, mockData.events, eventId]);
 
   const attendees = useMemo(() => {
-    return rsvps
-      .filter((r) => r.eventId === eventId)
-      .map((r) => ({
-        name: personName(persons, r.personId),
+    if (isApiMode()) {
+      const raw = rsvpsResult.data as { eventRSVPs: ApiRSVP[] } | undefined;
+      return (raw?.eventRSVPs ?? []).map((r) => ({
+        name: r.personId,
         status: r.status,
       }));
-  }, [rsvps, eventId, persons]);
+    }
+    return mockData.rsvps
+      .filter((r) => r.eventId === eventId)
+      .map((r) => ({
+        name: personName(mockData.persons, r.personId),
+        status: r.status,
+      }));
+  }, [rsvpsResult.data, mockData.rsvps, mockData.persons, eventId]);
+
+  const loading = isApiMode() && (eventResult.fetching || rsvpsResult.fetching);
 
   function handleRSVP(status: RSVPStatus) {
     if (isApiMode()) {
-      void rsvpEvent({ input: { eventId, status } });
+      void rsvpEvent({ input: { eventId, status } }).then(() => {
+        reexecuteRsvps({ requestPolicy: "network-only" });
+      });
     } else {
       console.log("[mock] rsvpEvent:", { eventId, status });
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <Link to="/calendar" className="text-sm text-[var(--color-accent-primary)] hover:underline">
+          &larr; Back to Calendar
+        </Link>
+        <p className="mt-4 text-[var(--color-text-secondary)]">Loading...</p>
+      </div>
+    );
   }
 
   if (!event) {

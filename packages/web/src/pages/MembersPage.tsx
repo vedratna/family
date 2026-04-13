@@ -1,10 +1,12 @@
-import type { Role } from "@family-app/shared";
+import type { Role, FamilyMembership, Person } from "@family-app/shared";
 import { useMemo, useState, type SyntheticEvent } from "react";
 import { Link } from "react-router";
+import { useQuery } from "urql";
 
+import { FAMILY_MEMBERS_QUERY, FAMILY_PERSONS_QUERY } from "../lib/graphql-operations";
 import { useInviteMember } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
-import { toMemberItems } from "../lib/transforms";
+import { toMemberItems, type MemberItem } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
 
@@ -18,7 +20,7 @@ const ROLE_STYLES: Record<string, string> = {
 const ROLE_OPTIONS: Role[] = ["owner", "admin", "editor", "viewer"];
 
 export function MembersPage() {
-  const { persons, memberships } = useMockData();
+  const mockData = useMockData();
   const { activeFamilyId, activeFamily } = useFamily();
   const { inviteMember, loading: inviteLoading } = useInviteMember();
 
@@ -28,10 +30,44 @@ export function MembersPage() {
   const [relationship, setRelationship] = useState("");
   const [role, setRole] = useState<Role>("viewer");
 
-  const members = useMemo(
-    () => toMemberItems(persons, memberships, activeFamilyId),
-    [persons, memberships, activeFamilyId],
-  );
+  const [membersResult, reexecuteMembers] = useQuery({
+    query: FAMILY_MEMBERS_QUERY,
+    variables: { familyId: activeFamilyId },
+    pause: !isApiMode() || !activeFamilyId,
+  });
+
+  const [personsResult] = useQuery({
+    query: FAMILY_PERSONS_QUERY,
+    variables: { familyId: activeFamilyId },
+    pause: !isApiMode() || !activeFamilyId,
+  });
+
+  const members = useMemo((): MemberItem[] | null => {
+    if (isApiMode()) {
+      if (membersResult.fetching || personsResult.fetching) return null;
+      const rawMembers = membersResult.data as { familyMembers: FamilyMembership[] } | undefined;
+      const rawPersons = personsResult.data as { familyPersons: Person[] } | undefined;
+      const apiMembers = rawMembers?.familyMembers ?? [];
+      const apiPersons = rawPersons?.familyPersons ?? [];
+      return apiMembers.map((m) => {
+        const person = apiPersons.find((p) => p.id === m.personId);
+        return {
+          personId: m.personId,
+          name: person?.name ?? m.personId,
+          role: m.role,
+          hasAppAccount: person?.userId !== undefined,
+        };
+      });
+    }
+    return toMemberItems(mockData.persons, mockData.memberships, activeFamilyId);
+  }, [
+    membersResult.fetching,
+    membersResult.data,
+    personsResult.fetching,
+    personsResult.data,
+    mockData,
+    activeFamilyId,
+  ]);
 
   function handleInvite(e: SyntheticEvent) {
     e.preventDefault();
@@ -46,7 +82,9 @@ export function MembersPage() {
     };
 
     if (isApiMode()) {
-      void inviteMember({ input });
+      void inviteMember({ input }).then(() => {
+        reexecuteMembers({ requestPolicy: "network-only" });
+      });
     } else {
       console.log("[mock] inviteMember:", input);
     }
@@ -56,6 +94,17 @@ export function MembersPage() {
     setRelationship("");
     setRole("viewer");
     setShowForm(false);
+  }
+
+  if (members === null) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <Link to="/settings" className="text-sm text-[var(--color-accent-primary)] hover:underline">
+          &larr; Back to Settings
+        </Link>
+        <p className="mt-4 text-sm text-[var(--color-text-secondary)]">Loading members...</p>
+      </div>
+    );
   }
 
   return (

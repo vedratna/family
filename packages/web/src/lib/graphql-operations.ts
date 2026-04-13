@@ -1,3 +1,22 @@
+// ─── Family Queries ───
+
+export const MY_FAMILIES_QUERY = `
+  query MyFamilies {
+    myFamilies {
+      family { id name createdBy themeName createdAt }
+      role
+    }
+  }
+`;
+
+export const CREATE_FAMILY_MUTATION = `
+  mutation CreateFamily($input: CreateFamilyInput!) {
+    createFamily(input: $input) {
+      id name createdBy themeName createdAt
+    }
+  }
+`;
+
 // ─── Feed / Post Queries ───
 
 export const FAMILY_FEED_QUERY = `

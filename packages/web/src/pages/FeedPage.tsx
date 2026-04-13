@@ -1,9 +1,11 @@
 import { useState, useMemo, type SyntheticEvent } from "react";
 import { Link } from "react-router";
+import { useQuery } from "urql";
 
+import { FAMILY_FEED_QUERY } from "../lib/graphql-operations";
 import { useCreatePost } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
-import { toFeedItems, type FeedItem } from "../lib/transforms";
+import { toFeedItems, type FeedItem, computeTimeAgo } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
 
@@ -76,25 +78,69 @@ function EventCard({ item }: { item: FeedItem & { type: "event" } }) {
   );
 }
 
+interface ApiFeedPost {
+  id: string;
+  familyId: string;
+  authorPersonId: string;
+  textContent: string;
+  isSystemPost: boolean;
+  createdAt: string;
+}
+
 export function FeedPage() {
-  const { posts, events, comments, reactions, persons } = useMockData();
+  const mockData = useMockData();
   const { activeFamilyId } = useFamily();
   const { createPost, loading: postLoading } = useCreatePost();
 
   const [showForm, setShowForm] = useState(false);
   const [newPostText, setNewPostText] = useState("");
 
-  const feedItems = useMemo(
-    () => toFeedItems(posts, events, comments, reactions, persons, activeFamilyId),
-    [posts, events, comments, reactions, persons, activeFamilyId],
-  );
+  const [feedResult, reexecuteFeed] = useQuery({
+    query: FAMILY_FEED_QUERY,
+    variables: { familyId: activeFamilyId },
+    pause: !isApiMode() || !activeFamilyId,
+  });
+
+  const feedItems = useMemo((): FeedItem[] | null => {
+    if (isApiMode()) {
+      if (feedResult.fetching) return null;
+      const raw = feedResult.data as
+        | { familyFeed: { items: ApiFeedPost[]; cursor: string | null } }
+        | undefined;
+      const posts = raw?.familyFeed.items ?? [];
+      return posts.map(
+        (post): FeedItem => ({
+          type: "post",
+          id: post.id,
+          authorName: post.authorPersonId,
+          textContent: post.textContent,
+          timeAgo: computeTimeAgo(post.createdAt),
+          reactionCount: 0,
+          commentCount: 0,
+          createdAt: post.createdAt,
+        }),
+      );
+    }
+    return toFeedItems(
+      mockData.posts,
+      mockData.events,
+      mockData.comments,
+      mockData.reactions,
+      mockData.persons,
+      activeFamilyId,
+    );
+  }, [feedResult.fetching, feedResult.data, mockData, activeFamilyId]);
 
   function handleSubmitPost(e: SyntheticEvent) {
     e.preventDefault();
     if (!newPostText.trim()) return;
 
     if (isApiMode()) {
-      void createPost({ input: { familyId: activeFamilyId, textContent: newPostText.trim() } });
+      void createPost({
+        input: { familyId: activeFamilyId, textContent: newPostText.trim() },
+      }).then(() => {
+        reexecuteFeed({ requestPolicy: "network-only" });
+      });
     } else {
       console.log("[mock] createPost:", {
         familyId: activeFamilyId,
@@ -104,6 +150,14 @@ export function FeedPage() {
 
     setNewPostText("");
     setShowForm(false);
+  }
+
+  if (feedItems === null) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <p className="text-sm text-[var(--color-text-secondary)]">Loading feed...</p>
+      </div>
+    );
   }
 
   return (
@@ -155,7 +209,7 @@ export function FeedPage() {
           ),
         )}
         {feedItems.length === 0 && (
-          <p className="text-sm text-[var(--color-text-tertiary)]">No posts yet.</p>
+          <p className="text-sm text-[var(--color-text-tertiary)]">No posts yet — create one!</p>
         )}
       </div>
     </div>

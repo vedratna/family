@@ -2,9 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppLayout } from "./layout/AppLayout";
+import { isApiMode } from "./lib/mode";
 import { CalendarMonthPage } from "./pages/CalendarMonthPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { ChoresPage } from "./pages/ChoresPage";
+import { CreateFirstFamilyPage } from "./pages/CreateFirstFamilyPage";
 import { EventDetailPage } from "./pages/EventDetailPage";
 import { FeedPage } from "./pages/FeedPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -14,10 +16,29 @@ import { PostDetailPage } from "./pages/PostDetailPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { TreePage } from "./pages/TreePage";
 import { AuthProvider } from "./providers/AuthProvider";
-import { FamilyProvider } from "./providers/FamilyProvider";
+import { FamilyProvider, useFamily } from "./providers/FamilyProvider";
 import { GraphQLProvider } from "./providers/GraphQLProvider";
 import { MockDataProvider } from "./providers/MockDataProvider";
 import { ThemeProvider } from "./providers/ThemeProvider";
+
+function FamilyGate({ children }: { children: React.ReactNode }) {
+  const { families, loading } = useFamily();
+
+  if (isApiMode()) {
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-primary)]">
+          <p className="text-sm text-[var(--color-text-secondary)]">Loading...</p>
+        </div>
+      );
+    }
+    if (families.length === 0) {
+      return <CreateFirstFamilyPage />;
+    }
+  }
+
+  return <>{children}</>;
+}
 
 export function App() {
   return (
@@ -32,7 +53,9 @@ export function App() {
                   <Route
                     element={
                       <ProtectedRoute>
-                        <AppLayout />
+                        <FamilyGate>
+                          <AppLayout />
+                        </FamilyGate>
                       </ProtectedRoute>
                     }
                   >

@@ -1,29 +1,107 @@
 import { useMemo, useState, type SyntheticEvent } from "react";
 import { useParams, Link } from "react-router";
+import { useQuery } from "urql";
 
+import {
+  POST_DETAIL_QUERY,
+  POST_COMMENTS_QUERY,
+  POST_REACTIONS_QUERY,
+} from "../lib/graphql-operations";
 import { useAddComment } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
-import { toCommentItems, personName } from "../lib/transforms";
+import { toCommentItems, personName, computeTimeAgo, type CommentItem } from "../lib/transforms";
 import { useMockData } from "../providers/MockDataProvider";
+
+interface ApiPost {
+  id: string;
+  familyId: string;
+  authorPersonId: string;
+  textContent: string;
+  isSystemPost: boolean;
+  createdAt: string;
+}
+
+interface ApiComment {
+  id: string;
+  postId: string;
+  personId: string;
+  textContent: string;
+  createdAt: string;
+}
+
+interface ApiReaction {
+  postId: string;
+  personId: string;
+  emoji: string;
+  createdAt: string;
+}
 
 export function PostDetailPage() {
   const { postId } = useParams<{ postId: string }>();
-  const { posts, comments, reactions, persons } = useMockData();
+  const mockData = useMockData();
   const { addComment, loading: commentLoading } = useAddComment();
 
   const [commentText, setCommentText] = useState("");
 
-  const post = posts.find((p) => p.id === postId);
+  const [postResult] = useQuery({
+    query: POST_DETAIL_QUERY,
+    variables: { postId: postId ?? "" },
+    pause: !isApiMode() || postId === undefined,
+  });
 
-  const postReactions = useMemo(
-    () => reactions.filter((r) => r.postId === postId),
-    [reactions, postId],
-  );
+  const [commentsResult, reexecuteComments] = useQuery({
+    query: POST_COMMENTS_QUERY,
+    variables: { postId: postId ?? "" },
+    pause: !isApiMode() || postId === undefined,
+  });
 
-  const commentItems = useMemo(
-    () => toCommentItems(comments, postId ?? "", persons),
-    [comments, postId, persons],
-  );
+  const [reactionsResult] = useQuery({
+    query: POST_REACTIONS_QUERY,
+    variables: { postId: postId ?? "" },
+    pause: !isApiMode() || postId === undefined,
+  });
+
+  const post = useMemo(() => {
+    if (isApiMode()) {
+      const raw = postResult.data as { post: ApiPost | null } | undefined;
+      return raw?.post ?? null;
+    }
+    return mockData.posts.find((p) => p.id === postId) ?? null;
+  }, [postResult.data, mockData.posts, postId]);
+
+  const reactionCount = useMemo(() => {
+    if (isApiMode()) {
+      const raw = reactionsResult.data as { reactions: ApiReaction[] } | undefined;
+      return raw?.reactions.length ?? 0;
+    }
+    return mockData.reactions.filter((r) => r.postId === postId).length;
+  }, [reactionsResult.data, mockData.reactions, postId]);
+
+  const commentItems = useMemo((): CommentItem[] => {
+    if (isApiMode()) {
+      const raw = commentsResult.data as { comments: ApiComment[] } | undefined;
+      return (raw?.comments ?? []).map((c) => ({
+        id: c.id,
+        authorName: c.personId,
+        textContent: c.textContent,
+        timeAgo: computeTimeAgo(c.createdAt),
+      }));
+    }
+    return toCommentItems(mockData.comments, postId ?? "", mockData.persons);
+  }, [commentsResult.data, mockData.comments, mockData.persons, postId]);
+
+  const loading = isApiMode() && (postResult.fetching || commentsResult.fetching);
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <Link to="/feed" className="text-sm text-[var(--color-accent-primary)] hover:underline">
+          &larr; Back to Feed
+        </Link>
+        <p className="mt-4 text-[var(--color-text-secondary)]">Loading...</p>
+      </div>
+    );
+  }
 
   if (!post) {
     return (
@@ -36,14 +114,18 @@ export function PostDetailPage() {
     );
   }
 
-  const authorName = personName(persons, post.authorPersonId);
+  const authorName = isApiMode()
+    ? post.authorPersonId
+    : personName(mockData.persons, post.authorPersonId);
 
   function handleAddComment(e: SyntheticEvent) {
     e.preventDefault();
     if (!commentText.trim()) return;
 
     if (isApiMode()) {
-      void addComment({ input: { postId, textContent: commentText.trim() } });
+      void addComment({ input: { postId, textContent: commentText.trim() } }).then(() => {
+        reexecuteComments({ requestPolicy: "network-only" });
+      });
     } else {
       console.log("[mock] addComment:", { postId, textContent: commentText.trim() });
     }
@@ -71,7 +153,7 @@ export function PostDetailPage() {
         </p>
         <div className="flex gap-4 text-xs text-[var(--color-text-secondary)]">
           <span>
-            {"\u2764\uFE0F"} {postReactions.length}
+            {"\u2764\uFE0F"} {reactionCount}
           </span>
           <span>
             {"\uD83D\uDCAC"} {commentItems.length}

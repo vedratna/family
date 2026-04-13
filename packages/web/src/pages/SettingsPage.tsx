@@ -18,7 +18,7 @@ const THEME_OPTIONS: { name: ThemeName; color: string }[] = [
 ];
 
 export function SettingsPage() {
-  const { families, activeFamilyId, activeThemeName, switchFamily } = useFamily();
+  const { families, activeFamilyId, activeThemeName, switchFamily, refetchFamilies } = useFamily();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { updateFamilyTheme } = useUpdateFamilyTheme();
@@ -30,7 +30,9 @@ export function SettingsPage() {
 
   function handleThemeChange(themeName: ThemeName) {
     if (isApiMode()) {
-      void updateFamilyTheme({ input: { familyId: activeFamilyId, themeName } });
+      void updateFamilyTheme({ input: { familyId: activeFamilyId, themeName } }).then(() => {
+        refetchFamilies();
+      });
     } else {
       console.log("[mock] updateFamilyTheme:", { familyId: activeFamilyId, themeName });
     }
@@ -106,6 +108,9 @@ export function SettingsPage() {
               )}
             </button>
           ))}
+          {families.length === 0 && (
+            <p className="text-sm text-[var(--color-text-tertiary)]">No families yet.</p>
+          )}
         </div>
       </div>
     </div>

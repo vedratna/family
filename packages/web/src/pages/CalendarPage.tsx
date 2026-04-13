@@ -1,7 +1,9 @@
-import type { EventType } from "@family-app/shared";
+import type { EventType, FamilyEvent } from "@family-app/shared";
 import { useMemo, useState, type SyntheticEvent } from "react";
 import { Link } from "react-router";
+import { useQuery } from "urql";
 
+import { FAMILY_EVENTS_QUERY } from "../lib/graphql-operations";
 import { useCreateEvent } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import { toAgendaSections } from "../lib/transforms";
@@ -19,7 +21,7 @@ const EVENT_TYPES: EventType[] = [
 ];
 
 export function CalendarPage() {
-  const { events } = useMockData();
+  const mockData = useMockData();
   const { activeFamilyId } = useFamily();
   const { createEvent, loading: eventLoading } = useCreateEvent();
 
@@ -30,10 +32,29 @@ export function CalendarPage() {
   const [startTime, setStartTime] = useState("");
   const [location, setLocation] = useState("");
 
-  const sections = useMemo(
-    () => toAgendaSections(events, activeFamilyId),
-    [events, activeFamilyId],
-  );
+  const [eventsResult, reexecuteEvents] = useQuery({
+    query: FAMILY_EVENTS_QUERY,
+    variables: { familyId: activeFamilyId },
+    pause: !isApiMode() || !activeFamilyId,
+  });
+
+  const events = useMemo((): FamilyEvent[] | null => {
+    if (isApiMode()) {
+      if (eventsResult.fetching) return null;
+      const raw = eventsResult.data as { familyEvents: FamilyEvent[] } | undefined;
+      return raw?.familyEvents ?? [];
+    }
+    return mockData.events;
+  }, [eventsResult.fetching, eventsResult.data, mockData.events]);
+
+  const sections = useMemo(() => {
+    if (events === null) return null;
+    if (isApiMode()) {
+      // In API mode, events are already filtered by familyId from the backend
+      return toAgendaSections(events, activeFamilyId);
+    }
+    return toAgendaSections(events, activeFamilyId);
+  }, [events, activeFamilyId]);
 
   function handleCreateEvent(e: SyntheticEvent) {
     e.preventDefault();
@@ -49,7 +70,9 @@ export function CalendarPage() {
     if (location.trim()) input.location = location.trim();
 
     if (isApiMode()) {
-      void createEvent({ input });
+      void createEvent({ input }).then(() => {
+        reexecuteEvents({ requestPolicy: "network-only" });
+      });
     } else {
       console.log("[mock] createEvent:", input);
     }
@@ -60,6 +83,14 @@ export function CalendarPage() {
     setStartTime("");
     setLocation("");
     setShowForm(false);
+  }
+
+  if (sections === null) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <p className="text-sm text-[var(--color-text-secondary)]">Loading events...</p>
+      </div>
+    );
   }
 
   return (

@@ -1,6 +1,10 @@
+import type { FamilyEvent } from "@family-app/shared";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
+import { useQuery } from "urql";
 
+import { FAMILY_EVENTS_QUERY } from "../lib/graphql-operations";
+import { isApiMode } from "../lib/mode";
 import { toMonthDays } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
@@ -23,23 +27,38 @@ const MONTH_NAMES = [
 ];
 
 export function CalendarMonthPage() {
-  const { events } = useMockData();
+  const mockData = useMockData();
   const { activeFamilyId } = useFamily();
+
+  const [eventsResult] = useQuery({
+    query: FAMILY_EVENTS_QUERY,
+    variables: { familyId: activeFamilyId },
+    pause: !isApiMode() || !activeFamilyId,
+  });
+
+  const events = useMemo((): FamilyEvent[] | null => {
+    if (isApiMode()) {
+      if (eventsResult.fetching) return null;
+      const raw = eventsResult.data as { familyEvents: FamilyEvent[] } | undefined;
+      return raw?.familyEvents ?? [];
+    }
+    return mockData.events;
+  }, [eventsResult.fetching, eventsResult.data, mockData.events]);
 
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
-  const days = useMemo(
-    () => toMonthDays(events, year, month, activeFamilyId),
-    [events, year, month, activeFamilyId],
-  );
+  const days = useMemo(() => {
+    if (events === null) return null;
+    return toMonthDays(events, year, month, activeFamilyId);
+  }, [events, year, month, activeFamilyId]);
 
-  const familyEvents = useMemo(
-    () => events.filter((e) => e.familyId === activeFamilyId),
-    [events, activeFamilyId],
-  );
+  const familyEvents = useMemo(() => {
+    if (events === null) return [];
+    return events.filter((e) => e.familyId === activeFamilyId);
+  }, [events, activeFamilyId]);
 
   const selectedDayEvents = useMemo(() => {
     if (selectedDay === null) return [];
@@ -68,6 +87,14 @@ export function CalendarMonthPage() {
     }
     setSelectedDay(null);
   };
+
+  if (days === null) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <p className="text-sm text-[var(--color-text-secondary)]">Loading calendar...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-4">

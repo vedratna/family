@@ -1,7 +1,9 @@
-import type { RelationshipType } from "@family-app/shared";
+import type { RelationshipType, Relationship, Person } from "@family-app/shared";
 import { useMemo, useState, type SyntheticEvent } from "react";
 import { useParams, Link } from "react-router";
+import { useQuery } from "urql";
 
+import { FAMILY_RELATIONSHIPS_QUERY, FAMILY_PERSONS_QUERY } from "../lib/graphql-operations";
 import { useCreateRelationship } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import type { PersonRelationship } from "../lib/transforms";
@@ -26,7 +28,7 @@ const RELATIONSHIP_TYPES: RelationshipType[] = [
 
 export function PersonPage() {
   const { personId } = useParams<{ personId: string }>();
-  const { persons, relationships } = useMockData();
+  const mockData = useMockData();
   const { activeFamilyId } = useFamily();
   const { createRelationship, loading: relLoading } = useCreateRelationship();
 
@@ -35,6 +37,34 @@ export function PersonPage() {
   const [relType, setRelType] = useState<RelationshipType>("parent-child");
   const [aToBLabel, setAToBLabel] = useState("");
   const [bToALabel, setBToALabel] = useState("");
+
+  const [relsResult, reexecuteRels] = useQuery({
+    query: FAMILY_RELATIONSHIPS_QUERY,
+    variables: { familyId: activeFamilyId },
+    pause: !isApiMode() || !activeFamilyId,
+  });
+
+  const [personsResult] = useQuery({
+    query: FAMILY_PERSONS_QUERY,
+    variables: { familyId: activeFamilyId },
+    pause: !isApiMode() || !activeFamilyId,
+  });
+
+  const persons = useMemo((): Person[] => {
+    if (isApiMode()) {
+      const raw = personsResult.data as { familyPersons: Person[] } | undefined;
+      return raw?.familyPersons ?? [];
+    }
+    return mockData.persons;
+  }, [personsResult.data, mockData.persons]);
+
+  const relationships = useMemo((): Relationship[] => {
+    if (isApiMode()) {
+      const raw = relsResult.data as { familyRelationships: Relationship[] } | undefined;
+      return raw?.familyRelationships ?? [];
+    }
+    return mockData.relationships;
+  }, [relsResult.data, mockData.relationships]);
 
   const person = persons.find((p) => p.id === personId);
 
@@ -61,6 +91,8 @@ export function PersonPage() {
       });
   }, [relationships, activeFamilyId, personId, persons]);
 
+  const loading = isApiMode() && (relsResult.fetching || personsResult.fetching);
+
   function handleAddRelationship(e: SyntheticEvent) {
     e.preventDefault();
     if (!otherPersonId || !aToBLabel.trim() || !bToALabel.trim()) return;
@@ -75,7 +107,9 @@ export function PersonPage() {
     };
 
     if (isApiMode()) {
-      void createRelationship({ input });
+      void createRelationship({ input }).then(() => {
+        reexecuteRels({ requestPolicy: "network-only" });
+      });
     } else {
       console.log("[mock] createRelationship:", input);
     }
@@ -85,6 +119,17 @@ export function PersonPage() {
     setAToBLabel("");
     setBToALabel("");
     setShowForm(false);
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <Link to="/tree" className="text-sm text-[var(--color-accent-primary)] hover:underline">
+          &larr; Back to Tree
+        </Link>
+        <p className="mt-4 text-[var(--color-text-secondary)]">Loading...</p>
+      </div>
+    );
   }
 
   return (

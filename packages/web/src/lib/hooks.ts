@@ -1,6 +1,8 @@
 import { useMutation, useQuery } from "urql";
 
 import {
+  MY_FAMILIES_QUERY,
+  CREATE_FAMILY_MUTATION,
   REGISTER_MUTATION,
   USER_BY_PHONE_QUERY,
   FAMILY_FEED_QUERY,
@@ -38,6 +40,39 @@ import {
   UPDATE_NOTIFICATION_PREF_MUTATION,
   REQUEST_UPLOAD_MUTATION,
 } from "./graphql-operations";
+
+// ─── Families ───
+
+export function useMyFamilies(pause = false) {
+  const [result, reexecute] = useQuery({
+    query: MY_FAMILIES_QUERY,
+    pause,
+  });
+  return {
+    data: result.data as
+      | {
+          myFamilies: {
+            family: {
+              id: string;
+              name: string;
+              createdBy: string;
+              themeName: string;
+              createdAt: string;
+            };
+            role: string;
+          }[];
+        }
+      | undefined,
+    fetching: result.fetching,
+    error: result.error,
+    reexecute,
+  };
+}
+
+export function useCreateFamily() {
+  const [result, executeMutation] = useMutation(CREATE_FAMILY_MUTATION);
+  return { createFamily: executeMutation, loading: result.fetching, error: result.error };
+}
 
 // ─── Auth ───
 
