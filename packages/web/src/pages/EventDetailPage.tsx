@@ -1,7 +1,13 @@
+import type { RSVPStatus, FamilyEvent } from "@family-app/shared";
 import { useMemo } from "react";
 import { useParams, Link } from "react-router";
+import { useQuery } from "urql";
 
+import { EVENT_DETAIL_QUERY, EVENT_RSVPS_QUERY } from "../lib/graphql-operations";
+import { useRSVPEvent } from "../lib/hooks";
+import { isApiMode } from "../lib/mode";
 import { personName } from "../lib/transforms";
+import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -10,20 +16,83 @@ const STATUS_COLORS: Record<string, string> = {
   "not-going": "bg-red-100 text-red-800",
 };
 
-export function EventDetailPage() {
-  const { eventId } = useParams<{ eventId: string }>();
-  const { events, rsvps, persons } = useMockData();
+const RSVP_OPTIONS: { label: string; value: RSVPStatus }[] = [
+  { label: "Going", value: "going" },
+  { label: "Maybe", value: "maybe" },
+  { label: "Can't", value: "not-going" },
+];
 
-  const event = events.find((e) => e.id === eventId);
+interface ApiRSVP {
+  eventId: string;
+  personId: string;
+  status: RSVPStatus;
+  updatedAt: string;
+}
+
+export function EventDetailPage() {
+  const { eventId, date } = useParams<{ eventId: string; date: string }>();
+  const mockData = useMockData();
+  const { activeFamilyId } = useFamily();
+  const { rsvpEvent, loading: rsvpLoading } = useRSVPEvent();
+
+  const [eventResult] = useQuery({
+    query: EVENT_DETAIL_QUERY,
+    variables: { familyId: activeFamilyId, date: date ?? "", eventId: eventId ?? "" },
+    pause: !isApiMode() || eventId === undefined || !activeFamilyId || date === undefined,
+  });
+
+  const [rsvpsResult, reexecuteRsvps] = useQuery({
+    query: EVENT_RSVPS_QUERY,
+    variables: { eventId: eventId ?? "" },
+    pause: !isApiMode() || eventId === undefined,
+  });
+
+  const event = useMemo((): FamilyEvent | null => {
+    if (isApiMode()) {
+      const raw = eventResult.data as { eventDetail: FamilyEvent | null } | undefined;
+      return raw?.eventDetail ?? null;
+    }
+    return mockData.events.find((e) => e.id === eventId) ?? null;
+  }, [eventResult.data, mockData.events, eventId]);
 
   const attendees = useMemo(() => {
-    return rsvps
-      .filter((r) => r.eventId === eventId)
-      .map((r) => ({
-        name: personName(persons, r.personId),
+    if (isApiMode()) {
+      const raw = rsvpsResult.data as { eventRSVPs: ApiRSVP[] } | undefined;
+      return (raw?.eventRSVPs ?? []).map((r) => ({
+        name: r.personId,
         status: r.status,
       }));
-  }, [rsvps, eventId, persons]);
+    }
+    return mockData.rsvps
+      .filter((r) => r.eventId === eventId)
+      .map((r) => ({
+        name: personName(mockData.persons, r.personId),
+        status: r.status,
+      }));
+  }, [rsvpsResult.data, mockData.rsvps, mockData.persons, eventId]);
+
+  const loading = isApiMode() && (eventResult.fetching || rsvpsResult.fetching);
+
+  function handleRSVP(status: RSVPStatus) {
+    if (isApiMode()) {
+      void rsvpEvent({ eventId, status }).then(() => {
+        reexecuteRsvps({ requestPolicy: "network-only" });
+      });
+    } else {
+      console.log("[mock] rsvpEvent:", { eventId, status });
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <Link to="/calendar" className="text-sm text-[var(--color-accent-primary)] hover:underline">
+          &larr; Back to Calendar
+        </Link>
+        <p className="mt-4 text-[var(--color-text-secondary)]">Loading...</p>
+      </div>
+    );
+  }
 
   if (!event) {
     return (
@@ -78,6 +147,22 @@ export function EventDetailPage() {
             {event.description}
           </p>
         )}
+      </div>
+
+      {/* RSVP Buttons */}
+      <div className="mt-4 flex gap-2">
+        {RSVP_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => {
+              handleRSVP(opt.value);
+            }}
+            disabled={rsvpLoading}
+            className="flex-1 py-2 text-sm font-medium rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-card)] text-[var(--color-text-primary)] hover:border-[var(--color-accent-primary)] transition-colors disabled:opacity-50"
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       <div className="mt-6">

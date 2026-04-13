@@ -6,7 +6,7 @@ export const MOCK_POSTS: Post[] = [
     familyId: "fam-sharma-001",
     authorPersonId: "system",
     textContent:
-      "Welcome to Sharma Family! Priya created this family space. Invites sent to Rajesh and Amit.",
+      "Welcome to Disney Family! Minnie created this family space. Invites sent to Mickey and Donald.",
     isSystemPost: true,
     createdAt: "2026-03-01T10:00:00Z",
   },
@@ -14,7 +14,8 @@ export const MOCK_POSTS: Post[] = [
     id: "post-001",
     familyId: "fam-sharma-001",
     authorPersonId: "person-priya",
-    textContent: "Amit's first day at school! He was so excited this morning. Growing up so fast.",
+    textContent:
+      "Donald's first day at school! He was so excited this morning. Growing up so fast.",
     isSystemPost: false,
     createdAt: "2026-04-05T08:30:00Z",
   },
@@ -54,7 +55,7 @@ export const MOCK_POSTS: Post[] = [
     id: "post-006",
     familyId: "fam-sharma-001",
     authorPersonId: "person-rajesh",
-    textContent: "Weekend gardening with Amit. Teaching him how to grow tomatoes.",
+    textContent: "Weekend gardening with Donald. Teaching him how to grow tomatoes.",
     isSystemPost: false,
     createdAt: "2026-03-30T11:00:00Z",
   },

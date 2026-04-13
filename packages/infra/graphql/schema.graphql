@@ -9,11 +9,14 @@ type Query {
 
   # Feed
   familyFeed(familyId: ID!, limit: Int, cursor: String): PaginatedPosts!
+  postDetail(postId: ID!, familyId: ID!): Post
   postComments(postId: ID!, limit: Int, cursor: String): PaginatedComments!
+  postReactions(postId: ID!): [Reaction!]!
 
   # Calendar
   familyEvents(familyId: ID!, startDate: String!, endDate: String!): [Event!]!
   eventDetail(familyId: ID!, date: String!, eventId: ID!): Event
+  eventRSVPs(eventId: ID!): [EventRSVP!]!
 
   # Chores
   familyChores(familyId: ID!): [Chore!]!
@@ -24,6 +27,12 @@ type Query {
 
   # Notifications
   notificationPreferences(familyId: ID!): [NotificationPreference!]!
+
+  # User lookup
+  userByPhone(phone: String!): User
+
+  # Pending invitations for current user (by phone)
+  myInvitations: [InvitationWithContext!]!
 }
 
 type Mutation {
@@ -121,6 +130,18 @@ type Invitation {
   familyId: ID!
   phone: String!
   invitedBy: String!
+  relationshipToInviter: String!
+  role: String!
+  status: String!
+  createdAt: String!
+}
+
+type InvitationWithContext {
+  familyId: ID!
+  familyName: String!
+  familyThemeName: String!
+  phone: String!
+  inviterName: String!
   relationshipToInviter: String!
   role: String!
   status: String!

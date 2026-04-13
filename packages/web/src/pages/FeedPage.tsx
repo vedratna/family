@@ -1,7 +1,11 @@
-import { useMemo } from "react";
+import { useState, useMemo, type SyntheticEvent } from "react";
 import { Link } from "react-router";
+import { useQuery } from "urql";
 
-import { toFeedItems, type FeedItem } from "../lib/transforms";
+import { FAMILY_FEED_QUERY } from "../lib/graphql-operations";
+import { useCreatePost } from "../lib/hooks";
+import { isApiMode } from "../lib/mode";
+import { toFeedItems, type FeedItem, computeTimeAgo } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
 
@@ -58,7 +62,7 @@ function EventCard({ item }: { item: FeedItem & { type: "event" } }) {
 
   return (
     <Link
-      to={`/calendar/${item.id}`}
+      to={`/calendar/${item.date}/${item.id}`}
       className="block p-4 bg-[var(--color-accent-light)] rounded-xl border border-transparent hover:border-[var(--color-accent-primary)] transition-colors"
     >
       <div className="flex items-center gap-3">
@@ -74,18 +78,142 @@ function EventCard({ item }: { item: FeedItem & { type: "event" } }) {
   );
 }
 
-export function FeedPage() {
-  const { posts, events, comments, reactions, persons } = useMockData();
-  const { activeFamilyId } = useFamily();
+interface ApiFeedPost {
+  id: string;
+  familyId: string;
+  authorPersonId: string;
+  textContent: string;
+  isSystemPost: boolean;
+  createdAt: string;
+}
 
-  const feedItems = useMemo(
-    () => toFeedItems(posts, events, comments, reactions, persons, activeFamilyId),
-    [posts, events, comments, reactions, persons, activeFamilyId],
-  );
+export function FeedPage() {
+  const mockData = useMockData();
+  const { activeFamilyId } = useFamily();
+  const { createPost, loading: postLoading } = useCreatePost();
+
+  const [showForm, setShowForm] = useState(false);
+  const [newPostText, setNewPostText] = useState("");
+  const [postError, setPostError] = useState<string | null>(null);
+
+  const [feedResult, reexecuteFeed] = useQuery({
+    query: FAMILY_FEED_QUERY,
+    variables: { familyId: activeFamilyId },
+    pause: !isApiMode() || !activeFamilyId,
+  });
+
+  const feedItems = useMemo((): FeedItem[] | null => {
+    if (isApiMode()) {
+      if (feedResult.fetching) return null;
+      const raw = feedResult.data as
+        | { familyFeed: { items: ApiFeedPost[]; cursor: string | null } }
+        | undefined;
+      const posts = raw?.familyFeed.items ?? [];
+      return posts.map(
+        (post): FeedItem => ({
+          type: "post",
+          id: post.id,
+          authorName: post.authorPersonId,
+          textContent: post.textContent,
+          timeAgo: computeTimeAgo(post.createdAt),
+          reactionCount: 0,
+          commentCount: 0,
+          createdAt: post.createdAt,
+        }),
+      );
+    }
+    return toFeedItems(
+      mockData.posts,
+      mockData.events,
+      mockData.comments,
+      mockData.reactions,
+      mockData.persons,
+      activeFamilyId,
+    );
+  }, [feedResult.fetching, feedResult.data, mockData, activeFamilyId]);
+
+  function handleSubmitPost(e: SyntheticEvent) {
+    e.preventDefault();
+    if (!newPostText.trim()) return;
+
+    setPostError(null);
+
+    if (isApiMode()) {
+      void createPost({
+        input: { familyId: activeFamilyId, textContent: newPostText.trim() },
+      }).then((result) => {
+        if (result.error) {
+          const msg = result.error.message.replace("[GraphQL] ", "");
+          if (msg.includes("ActivationGateError") || msg.includes("at least 2")) {
+            setPostError("Invite at least one more member before posting.");
+          } else {
+            setPostError(msg);
+          }
+          return;
+        }
+        reexecuteFeed({ requestPolicy: "network-only" });
+        setNewPostText("");
+        setShowForm(false);
+      });
+    } else {
+      console.log("[mock] createPost:", {
+        familyId: activeFamilyId,
+        textContent: newPostText.trim(),
+      });
+      setNewPostText("");
+      setShowForm(false);
+    }
+  }
+
+  if (feedItems === null) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <p className="text-sm text-[var(--color-text-secondary)]">Loading feed...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-4">Feed</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Feed</h1>
+        <button
+          onClick={() => {
+            setShowForm((v) => !v);
+          }}
+          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-accent-on)] hover:opacity-90 transition-opacity"
+        >
+          {showForm ? "Cancel" : "New Post"}
+        </button>
+      </div>
+
+      {showForm && (
+        <form
+          onSubmit={handleSubmitPost}
+          className="mb-4 p-4 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border-secondary)]"
+        >
+          <textarea
+            value={newPostText}
+            onChange={(e) => {
+              setNewPostText(e.target.value);
+            }}
+            placeholder="What's on your mind?"
+            className="w-full p-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] resize-none"
+            rows={3}
+          />
+          {postError !== null && <p className="mt-2 text-sm text-red-600">{postError}</p>}
+          <div className="flex justify-end mt-2">
+            <button
+              type="submit"
+              disabled={postLoading || !newPostText.trim()}
+              className="px-4 py-1.5 text-sm font-medium rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-accent-on)] hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {postLoading ? "Posting..." : "Post"}
+            </button>
+          </div>
+        </form>
+      )}
+
       <div className="flex flex-col gap-3">
         {feedItems.map((item) =>
           item.type === "post" ? (
@@ -93,6 +221,9 @@ export function FeedPage() {
           ) : (
             <EventCard key={item.id} item={item} />
           ),
+        )}
+        {feedItems.length === 0 && (
+          <p className="text-sm text-[var(--color-text-tertiary)]">No posts yet — create one!</p>
         )}
       </div>
     </div>

@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:integration": "DYNAMODB_ENDPOINT=http://localhost:8000 vitest run --config vitest.integration.config.ts"
+    "test:integration": "DYNAMODB_ENDPOINT=http://localhost:8000 vitest run --config vitest.integration.config.ts",
+    "seed": "DYNAMODB_ENDPOINT=http://localhost:8000 tsx src/repositories/dynamodb/seed.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.750.0",

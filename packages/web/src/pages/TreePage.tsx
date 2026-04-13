@@ -1,13 +1,50 @@
 import { useMemo } from "react";
 import { Link } from "react-router";
+import { useQuery } from "urql";
 
+import { FAMILY_TREE_QUERY } from "../lib/graphql-operations";
+import { isApiMode } from "../lib/mode";
+import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
 
+interface TreeNode {
+  personId: string;
+  name: string;
+  hasAppAccount: boolean;
+  generation: number;
+  spouseIds: string[];
+  childIds: string[];
+  parentIds: string[];
+}
+
+interface TreeData {
+  nodes: TreeNode[];
+  rootIds: string[];
+  generations: number;
+}
+
 export function TreePage() {
-  const { familyTree } = useMockData();
+  const mockData = useMockData();
+  const { activeFamilyId } = useFamily();
+
+  const [treeResult] = useQuery({
+    query: FAMILY_TREE_QUERY,
+    variables: { familyId: activeFamilyId },
+    pause: !isApiMode() || !activeFamilyId,
+  });
+
+  const familyTree = useMemo((): TreeData | null => {
+    if (isApiMode()) {
+      if (treeResult.fetching) return null;
+      const raw = treeResult.data as { familyTree: TreeData } | undefined;
+      return raw?.familyTree ?? { nodes: [], rootIds: [], generations: 0 };
+    }
+    return mockData.familyTree;
+  }, [treeResult.fetching, treeResult.data, mockData.familyTree]);
 
   const generationGroups = useMemo(() => {
-    const groups = new Map<number, typeof familyTree.nodes>();
+    if (familyTree === null) return null;
+    const groups = new Map<number, TreeNode[]>();
     for (const node of familyTree.nodes) {
       const existing = groups.get(node.generation);
       if (existing) {
@@ -17,9 +54,10 @@ export function TreePage() {
       }
     }
     return [...groups.entries()].sort(([a], [b]) => a - b);
-  }, [familyTree.nodes]);
+  }, [familyTree]);
 
   const spouseSet = useMemo(() => {
+    if (familyTree === null) return new Set<string>();
     const set = new Set<string>();
     for (const node of familyTree.nodes) {
       for (const spouseId of node.spouseIds) {
@@ -28,7 +66,15 @@ export function TreePage() {
       }
     }
     return set;
-  }, [familyTree.nodes]);
+  }, [familyTree]);
+
+  if (generationGroups === null) {
+    return (
+      <div className="max-w-3xl mx-auto p-4">
+        <p className="text-sm text-[var(--color-text-secondary)]">Loading family tree...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-4">
@@ -44,7 +90,7 @@ export function TreePage() {
               {nodes.map((node) => {
                 const isSpouseConnected = node.spouseIds.length > 0;
                 const spouseNode = isSpouseConnected
-                  ? familyTree.nodes.find((n) => n.personId === node.spouseIds[0])
+                  ? familyTree?.nodes.find((n) => n.personId === node.spouseIds[0])
                   : null;
                 const pairKey =
                   spouseNode !== undefined && spouseNode !== null
@@ -105,6 +151,11 @@ export function TreePage() {
             </div>
           </div>
         ))}
+        {generationGroups.length === 0 && (
+          <p className="text-sm text-[var(--color-text-tertiary)]">
+            No family tree data yet. Add members and relationships to build your tree.
+          </p>
+        )}
       </div>
     </div>
   );

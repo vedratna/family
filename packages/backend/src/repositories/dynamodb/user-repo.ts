@@ -31,7 +31,9 @@ export class DynamoUserRepository implements IUserRepository {
   }
 
   async getByPhone(phone: string): Promise<User | undefined> {
-    const result = await queryItems("GSI1PK", keys.gsi1.phone(phone), undefined, {
+    // GSI1PK=PHONE#<phone> is shared by Users (GSI1SK=USER#<id>) and
+    // Invitations (GSI1SK=INVITE#<familyId>). Filter to only match Users.
+    const result = await queryItems("GSI1PK", keys.gsi1.phone(phone), "USER#", {
       indexName: "GSI1",
       limit: 1,
     });
