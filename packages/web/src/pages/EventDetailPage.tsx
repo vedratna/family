@@ -25,8 +25,13 @@ const RSVP_OPTIONS: { label: string; value: RSVPStatus }[] = [
 interface ApiRSVP {
   eventId: string;
   personId: string;
+  personName: string;
   status: RSVPStatus;
   updatedAt: string;
+}
+
+interface ApiEvent extends FamilyEvent {
+  creatorName: string;
 }
 
 export function EventDetailPage() {
@@ -47,19 +52,21 @@ export function EventDetailPage() {
     pause: !isApiMode() || eventId === undefined,
   });
 
-  const event = useMemo((): FamilyEvent | null => {
+  const event = useMemo((): ApiEvent | FamilyEvent | null => {
     if (isApiMode()) {
-      const raw = eventResult.data as { eventDetail: FamilyEvent | null } | undefined;
+      const raw = eventResult.data as { eventDetail: ApiEvent | null } | undefined;
       return raw?.eventDetail ?? null;
     }
     return mockData.events.find((e) => e.id === eventId) ?? null;
   }, [eventResult.data, mockData.events, eventId]);
 
+  const creatorName = isApiMode() && event !== null ? (event as ApiEvent).creatorName : null;
+
   const attendees = useMemo(() => {
     if (isApiMode()) {
       const raw = rsvpsResult.data as { eventRSVPs: ApiRSVP[] } | undefined;
       return (raw?.eventRSVPs ?? []).map((r) => ({
-        name: r.personId,
+        name: r.personName,
         status: r.status,
       }));
     }
@@ -118,6 +125,12 @@ export function EventDetailPage() {
         </span>
 
         <div className="flex flex-col gap-2 text-sm text-[var(--color-text-secondary)]">
+          {creatorName !== null && (
+            <div className="flex gap-2">
+              <span className="font-medium text-[var(--color-text-primary)]">Created by:</span>
+              <span>{creatorName}</span>
+            </div>
+          )}
           <div className="flex gap-2">
             <span className="font-medium text-[var(--color-text-primary)]">Date:</span>
             <span>{event.startDate}</span>

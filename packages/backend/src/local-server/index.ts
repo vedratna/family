@@ -79,6 +79,38 @@ import { BuildFamilyTree, serializeTree } from "../use-cases/tree";
 
 interface Context {
   userId: string;
+  // Per-request caches to avoid N+1 lookups
+  personCache: Map<string, Map<string, string>>; // familyId → (personId → name)
+  postFamilyCache: Map<string, string>; // postId → familyId
+  eventFamilyCache: Map<string, string>; // eventId → familyId
+}
+
+async function getPersonName(ctx: Context, familyId: string, personId: string): Promise<string> {
+  if (personId === "system") return "System";
+  let famCache = ctx.personCache.get(familyId);
+  if (famCache === undefined) {
+    const persons = await personRepo.getByFamilyId(familyId);
+    famCache = new Map(persons.map((p) => [p.id, p.name]));
+    ctx.personCache.set(familyId, famCache);
+  }
+  return famCache.get(personId) ?? "Unknown";
+}
+
+async function getFamilyIdForPost(ctx: Context, postId: string): Promise<string | undefined> {
+  let familyId = ctx.postFamilyCache.get(postId);
+  if (familyId === undefined) {
+    const post = await postRepo.getById(postId);
+    if (post === undefined) return undefined;
+    familyId = post.familyId;
+    ctx.postFamilyCache.set(postId, familyId);
+  }
+  return familyId;
+}
+
+function getFamilyIdForEvent(ctx: Context, eventId: string): string | undefined {
+  // eventId looked up via family — we need to scan or rely on cache
+  // For now, use the cache populated when events are queried
+  return ctx.eventFamilyCache.get(eventId);
 }
 
 // ─── Repositories ───
@@ -240,16 +272,30 @@ const resolvers = {
     familyEvents: async (
       _: unknown,
       args: { familyId: string; startDate: string; endDate: string },
+      ctx: Context,
     ) => {
-      return getFamilyEvents.execute({
+      const events = await getFamilyEvents.execute({
         familyId: args.familyId,
         startDate: args.startDate,
         endDate: args.endDate,
       });
+      // Populate eventFamilyCache so EventRSVP.personName resolution works
+      for (const ev of events) {
+        ctx.eventFamilyCache.set(ev.id, ev.familyId);
+      }
+      return events;
     },
 
-    eventDetail: async (_: unknown, args: { familyId: string; date: string; eventId: string }) => {
-      return eventRepo.getById(args.familyId, args.date, args.eventId);
+    eventDetail: async (
+      _: unknown,
+      args: { familyId: string; date: string; eventId: string },
+      ctx: Context,
+    ) => {
+      const event = await eventRepo.getById(args.familyId, args.date, args.eventId);
+      if (event !== undefined) {
+        ctx.eventFamilyCache.set(event.id, event.familyId);
+      }
+      return event;
     },
 
     eventRSVPs: async (_: unknown, args: { eventId: string }) => {
@@ -809,6 +855,72 @@ const resolvers = {
       return true;
     },
   },
+
+  // ─── Field Resolvers (name resolution + counts) ───
+
+  Post: {
+    authorName: async (
+      post: { familyId: string; authorPersonId: string },
+      _args: unknown,
+      ctx: Context,
+    ) => {
+      return getPersonName(ctx, post.familyId, post.authorPersonId);
+    },
+    reactionCount: async (post: { id: string }) => {
+      const reactions = await reactionRepo.getByPostId(post.id);
+      return reactions.length;
+    },
+    commentCount: async (post: { id: string }) => {
+      const result = await commentRepo.getByPostId(post.id, 1000);
+      return result.items.length;
+    },
+  },
+
+  Comment: {
+    personName: async (
+      comment: { postId: string; personId: string },
+      _args: unknown,
+      ctx: Context,
+    ) => {
+      const familyId = await getFamilyIdForPost(ctx, comment.postId);
+      if (familyId === undefined) return "Unknown";
+      return getPersonName(ctx, familyId, comment.personId);
+    },
+  },
+
+  Reaction: {
+    personName: async (
+      reaction: { postId: string; personId: string },
+      _args: unknown,
+      ctx: Context,
+    ) => {
+      const familyId = await getFamilyIdForPost(ctx, reaction.postId);
+      if (familyId === undefined) return "Unknown";
+      return getPersonName(ctx, familyId, reaction.personId);
+    },
+  },
+
+  Event: {
+    creatorName: async (
+      event: { familyId: string; creatorPersonId: string },
+      _args: unknown,
+      ctx: Context,
+    ) => {
+      return getPersonName(ctx, event.familyId, event.creatorPersonId);
+    },
+  },
+
+  EventRSVP: {
+    personName: async (
+      rsvp: { eventId: string; personId: string },
+      _args: unknown,
+      ctx: Context,
+    ) => {
+      const familyId = getFamilyIdForEvent(ctx, rsvp.eventId);
+      if (familyId === undefined) return "Unknown";
+      return getPersonName(ctx, familyId, rsvp.personId);
+    },
+  },
 };
 
 // ─── Server ───
@@ -820,7 +932,12 @@ async function start(): Promise<void> {
     listen: { port: PORT },
     context: ({ req }) => {
       const userId = req.headers["x-user-id"] as string | undefined;
-      return Promise.resolve({ userId: userId ?? "local-dev-user" });
+      return Promise.resolve({
+        userId: userId ?? "local-dev-user",
+        personCache: new Map(),
+        postFamilyCache: new Map(),
+        eventFamilyCache: new Map(),
+      });
     },
   });
 

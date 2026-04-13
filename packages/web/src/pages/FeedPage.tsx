@@ -2,7 +2,7 @@ import { useState, useMemo, type SyntheticEvent } from "react";
 import { Link } from "react-router";
 import { useQuery } from "urql";
 
-import { FAMILY_FEED_QUERY } from "../lib/graphql-operations";
+import { FAMILY_FEED_QUERY, FAMILY_EVENTS_QUERY } from "../lib/graphql-operations";
 import { useCreatePost } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import { toFeedItems, type FeedItem, computeTimeAgo } from "../lib/transforms";
@@ -82,9 +82,12 @@ interface ApiFeedPost {
   id: string;
   familyId: string;
   authorPersonId: string;
+  authorName: string;
   textContent: string;
   isSystemPost: boolean;
   createdAt: string;
+  reactionCount: number;
+  commentCount: number;
 }
 
 export function FeedPage() {
@@ -102,6 +105,19 @@ export function FeedPage() {
     pause: !isApiMode() || !activeFamilyId,
   });
 
+  // In API mode, also fetch upcoming events to mix into the feed
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const ninetyDaysOut = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 90);
+    return d.toISOString().slice(0, 10);
+  }, []);
+  const [eventsResult] = useQuery({
+    query: FAMILY_EVENTS_QUERY,
+    variables: { familyId: activeFamilyId, startDate: today, endDate: ninetyDaysOut },
+    pause: !isApiMode() || !activeFamilyId,
+  });
+
   const feedItems = useMemo((): FeedItem[] | null => {
     if (isApiMode()) {
       if (feedResult.fetching) return null;
@@ -109,18 +125,46 @@ export function FeedPage() {
         | { familyFeed: { items: ApiFeedPost[]; cursor: string | null } }
         | undefined;
       const posts = raw?.familyFeed.items ?? [];
-      return posts.map(
-        (post): FeedItem => ({
-          type: "post",
-          id: post.id,
-          authorName: post.authorPersonId,
-          textContent: post.textContent,
-          timeAgo: computeTimeAgo(post.createdAt),
-          reactionCount: 0,
-          commentCount: 0,
-          createdAt: post.createdAt,
-        }),
-      );
+      const postItems: FeedItem[] = posts.map((post) => ({
+        type: "post",
+        id: post.id,
+        authorName: post.authorName,
+        textContent: post.textContent,
+        timeAgo: computeTimeAgo(post.createdAt),
+        reactionCount: post.reactionCount,
+        commentCount: post.commentCount,
+        createdAt: post.createdAt,
+      }));
+
+      const evRaw = eventsResult.data as
+        | {
+            familyEvents: {
+              id: string;
+              title: string;
+              eventType: string;
+              startDate: string;
+            }[];
+          }
+        | undefined;
+      const events = evRaw?.familyEvents ?? [];
+      const todayDate = new Date(today);
+      const eventItems: FeedItem[] = events.map((ev) => {
+        const eventDate = new Date(ev.startDate);
+        const daysAway = Math.ceil(
+          (eventDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        return {
+          type: "event",
+          id: ev.id,
+          title: ev.title,
+          date: ev.startDate,
+          daysAway,
+          eventType: ev.eventType,
+          createdAt: ev.startDate,
+        };
+      });
+
+      return [...postItems, ...eventItems].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
     }
     return toFeedItems(
       mockData.posts,
@@ -130,7 +174,7 @@ export function FeedPage() {
       mockData.persons,
       activeFamilyId,
     );
-  }, [feedResult.fetching, feedResult.data, mockData, activeFamilyId]);
+  }, [feedResult.fetching, feedResult.data, eventsResult.data, mockData, activeFamilyId, today]);
 
   function handleSubmitPost(e: SyntheticEvent) {
     e.preventDefault();
