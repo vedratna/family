@@ -9,6 +9,7 @@ import { formatErrorMessage } from "../lib/error-utils";
 import { FAMILY_CHORES_QUERY, FAMILY_MEMBERS_QUERY } from "../lib/graphql-operations";
 import { useCreateChore, useCompleteChore, useDeleteChore } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
+import { canDeleteChore } from "../lib/permissions";
 import { toChoreItems, type ChoreItem } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
@@ -30,7 +31,7 @@ const FILTER_TABS: { label: string; value: FilterTab }[] = [
 
 export function ChoresPage() {
   const mockData = useMockData();
-  const { activeFamilyId } = useFamily();
+  const { activeFamilyId, activeRole } = useFamily();
   const { createChore, loading: choreLoading } = useCreateChore();
   const { completeChore } = useCompleteChore();
   const { deleteChore, loading: deleteChoreLoading } = useDeleteChore();
@@ -295,14 +296,16 @@ export function ChoresPage() {
                     Complete
                   </button>
                 )}
-                <button
-                  onClick={() => {
-                    setDeleteTarget(chore.id);
-                  }}
-                  className="px-2 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-                >
-                  Delete
-                </button>
+                {canDeleteChore(activeRole) && (
+                  <button
+                    onClick={() => {
+                      setDeleteTarget(chore.id);
+                    }}
+                    className="px-2 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                  >
+                    Delete
+                  </button>
+                )}
                 <span
                   className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_STYLES[chore.status] ?? ""}`}
                 >

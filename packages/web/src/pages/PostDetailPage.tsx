@@ -1,8 +1,9 @@
-import { useMemo, useState, type SyntheticEvent } from "react";
+import { useMemo, useState, useEffect, useCallback, type SyntheticEvent } from "react";
 import { useParams, Link, useNavigate } from "react-router";
-import { useQuery } from "urql";
+import { useQuery, useClient } from "urql";
 
 import { ConfirmModal } from "../components/ConfirmModal";
+import { LoadMoreButton } from "../components/LoadMoreButton";
 import { Loading } from "../components/Loading";
 import { QueryError } from "../components/QueryError";
 import { formatErrorMessage } from "../lib/error-utils";
@@ -13,6 +14,7 @@ import {
 } from "../lib/graphql-operations";
 import { useAddComment, useDeletePost, useAddReaction, useRemoveReaction } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
+import { canDeletePost } from "../lib/permissions";
 import { toCommentItems, personName, computeTimeAgo, type CommentItem } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
@@ -47,7 +49,8 @@ export function PostDetailPage() {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
   const mockData = useMockData();
-  const { activeFamilyId, activePersonId } = useFamily();
+  const { activeFamilyId, activePersonId, activeRole } = useFamily();
+  const urqlClient = useClient();
   const { addComment, loading: commentLoading } = useAddComment();
   const { deletePost, loading: deleteLoading } = useDeletePost();
   const { addReaction, loading: addReactionLoading } = useAddReaction();
@@ -58,6 +61,9 @@ export function PostDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [reactionError, setReactionError] = useState<string | null>(null);
+  const [accumulatedComments, setAccumulatedComments] = useState<ApiComment[]>([]);
+  const [commentCursor, setCommentCursor] = useState<string | null>(null);
+  const [loadingMoreComments, setLoadingMoreComments] = useState(false);
 
   const [postResult, reexecutePost] = useQuery({
     query: POST_DETAIL_QUERY,
@@ -100,12 +106,39 @@ export function PostDetailPage() {
     return reactions.some((r) => r.personId === activePersonId);
   }, [reactions, activePersonId]);
 
+  // Populate accumulated comments from initial query
+  useEffect(() => {
+    if (!isApiMode()) return;
+    if (commentsResult.fetching) return;
+    const raw = commentsResult.data as
+      | { postComments: { items: ApiComment[]; cursor: string | null } }
+      | undefined;
+    if (raw === undefined) return;
+    setAccumulatedComments(raw.postComments.items);
+    setCommentCursor(raw.postComments.cursor);
+  }, [commentsResult.fetching, commentsResult.data]);
+
+  const loadMoreComments = useCallback(() => {
+    if (!isApiMode() || commentCursor === null || loadingMoreComments) return;
+    setLoadingMoreComments(true);
+    void urqlClient
+      .query(POST_COMMENTS_QUERY, { postId, cursor: commentCursor })
+      .toPromise()
+      .then((result) => {
+        const raw = result.data as
+          | { postComments: { items: ApiComment[]; cursor: string | null } }
+          | undefined;
+        if (raw) {
+          setAccumulatedComments((prev) => [...prev, ...raw.postComments.items]);
+          setCommentCursor(raw.postComments.cursor);
+        }
+        setLoadingMoreComments(false);
+      });
+  }, [urqlClient, postId, commentCursor, loadingMoreComments]);
+
   const commentItems = useMemo((): CommentItem[] => {
     if (isApiMode()) {
-      const raw = commentsResult.data as
-        | { postComments: { items: ApiComment[]; cursor: string | null } }
-        | undefined;
-      return (raw?.postComments.items ?? []).map((c) => ({
+      return accumulatedComments.map((c) => ({
         id: c.id,
         authorName: c.personName,
         textContent: c.textContent,
@@ -113,7 +146,7 @@ export function PostDetailPage() {
       }));
     }
     return toCommentItems(mockData.comments, postId ?? "", mockData.persons);
-  }, [commentsResult.data, mockData.comments, mockData.persons, postId]);
+  }, [accumulatedComments, mockData.comments, mockData.persons, postId]);
 
   const loading = isApiMode() && (postResult.fetching || commentsResult.fetching);
 
@@ -294,18 +327,20 @@ export function PostDetailPage() {
       </div>
 
       {/* Delete Post */}
-      <div className="mt-3 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            setShowDeleteModal(true);
-          }}
-          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-        >
-          Delete Post
-        </button>
-        {deleteError !== null && <span className="text-sm text-red-600">{deleteError}</span>}
-      </div>
+      {canDeletePost(activeRole, post.authorPersonId, activePersonId) && (
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setShowDeleteModal(true);
+            }}
+            className="px-3 py-1.5 text-sm font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+          >
+            Delete Post
+          </button>
+          {deleteError !== null && <span className="text-sm text-red-600">{deleteError}</span>}
+        </div>
+      )}
 
       <ConfirmModal
         open={showDeleteModal}
@@ -339,6 +374,13 @@ export function PostDetailPage() {
             <p className="text-sm text-[var(--color-text-tertiary)]">No comments yet.</p>
           )}
         </div>
+        {isApiMode() && (
+          <LoadMoreButton
+            visible={commentCursor !== null}
+            onClick={loadMoreComments}
+            loading={loadingMoreComments}
+          />
+        )}
 
         {/* Add Comment Form */}
         <form onSubmit={handleAddComment} className="mt-4">

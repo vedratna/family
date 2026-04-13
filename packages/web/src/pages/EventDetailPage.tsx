@@ -11,6 +11,7 @@ import { formatErrorMessage } from "../lib/error-utils";
 import { EVENT_DETAIL_QUERY, EVENT_RSVPS_QUERY } from "../lib/graphql-operations";
 import { useRSVPEvent, useEditEvent, useDeleteEvent } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
+import { canEditEvent, canDeleteEvent } from "../lib/permissions";
 import { personName } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
@@ -43,7 +44,7 @@ export function EventDetailPage() {
   const { eventId, date } = useParams<{ eventId: string; date: string }>();
   const navigate = useNavigate();
   const mockData = useMockData();
-  const { activeFamilyId, activePersonId } = useFamily();
+  const { activeFamilyId, activePersonId, activeRole } = useFamily();
   const { rsvpEvent, loading: rsvpLoading } = useRSVPEvent();
   const { editEvent } = useEditEvent();
   const { deleteEvent, loading: deleteLoading } = useDeleteEvent();
@@ -73,6 +74,9 @@ export function EventDetailPage() {
   }, [eventResult.data, mockData.events, eventId]);
 
   const creatorName = isApiMode() && event !== null ? (event as ApiEvent).creatorName : null;
+  const creatorPersonId = event?.creatorPersonId ?? "";
+  const allowEdit = canEditEvent(activeRole, creatorPersonId, activePersonId);
+  const allowDelete = canDeleteEvent(activeRole, creatorPersonId, activePersonId);
 
   const rsvps = useMemo((): ApiRSVP[] => {
     if (isApiMode()) {
@@ -221,13 +225,17 @@ export function EventDetailPage() {
       </Link>
 
       <div className="mt-4 p-5 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border-secondary)]">
-        <InlineEdit
-          value={event.title}
-          onSave={(next) => {
-            handleEditField("title", next);
-          }}
-          className="text-xl font-bold text-[var(--color-text-primary)] mb-1"
-        />
+        {allowEdit ? (
+          <InlineEdit
+            value={event.title}
+            onSave={(next) => {
+              handleEditField("title", next);
+            }}
+            className="text-xl font-bold text-[var(--color-text-primary)] mb-1"
+          />
+        ) : (
+          <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">{event.title}</h2>
+        )}
         <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-[var(--color-accent-light)] text-[var(--color-accent-primary)] font-medium mb-4">
           {event.eventType}
         </span>
@@ -251,13 +259,17 @@ export function EventDetailPage() {
           )}
           <div className="flex gap-2 items-start">
             <span className="font-medium text-[var(--color-text-primary)]">Location:</span>
-            <InlineEdit
-              value={event.location ?? ""}
-              onSave={(next) => {
-                handleEditField("location", next);
-              }}
-              placeholder="Add location"
-            />
+            {allowEdit ? (
+              <InlineEdit
+                value={event.location ?? ""}
+                onSave={(next) => {
+                  handleEditField("location", next);
+                }}
+                placeholder="Add location"
+              />
+            ) : (
+              <span>{event.location ?? ""}</span>
+            )}
           </div>
           {event.recurrenceRule !== undefined && (
             <div className="flex gap-2">
@@ -268,33 +280,41 @@ export function EventDetailPage() {
         </div>
 
         <div className="mt-4">
-          <InlineEdit
-            value={event.description ?? ""}
-            onSave={(next) => {
-              handleEditField("description", next);
-            }}
-            multiline
-            placeholder="Add description"
-            className="text-sm text-[var(--color-text-primary)] leading-relaxed"
-          />
+          {allowEdit ? (
+            <InlineEdit
+              value={event.description ?? ""}
+              onSave={(next) => {
+                handleEditField("description", next);
+              }}
+              multiline
+              placeholder="Add description"
+              className="text-sm text-[var(--color-text-primary)] leading-relaxed"
+            />
+          ) : (
+            <p className="text-sm text-[var(--color-text-primary)] leading-relaxed">
+              {event.description ?? ""}
+            </p>
+          )}
         </div>
 
         {editError !== null && <p className="text-sm text-red-600 mt-2">{editError}</p>}
       </div>
 
       {/* Delete Event */}
-      <div className="mt-3 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            setShowDeleteModal(true);
-          }}
-          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-        >
-          Delete Event
-        </button>
-        {deleteError !== null && <span className="text-sm text-red-600">{deleteError}</span>}
-      </div>
+      {allowDelete && (
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setShowDeleteModal(true);
+            }}
+            className="px-3 py-1.5 text-sm font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+          >
+            Delete Event
+          </button>
+          {deleteError !== null && <span className="text-sm text-red-600">{deleteError}</span>}
+        </div>
+      )}
 
       <ConfirmModal
         open={showDeleteModal}

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppLayout } from "./layout/AppLayout";
 import { isApiMode } from "./lib/mode";
@@ -11,6 +12,7 @@ import { EventDetailPage } from "./pages/EventDetailPage";
 import { FeedPage } from "./pages/FeedPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MembersPage } from "./pages/MembersPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
 import { PersonPage } from "./pages/PersonPage";
 import { PostDetailPage } from "./pages/PostDetailPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -42,41 +44,44 @@ function FamilyGate({ children }: { children: React.ReactNode }) {
 
 export function App() {
   return (
-    <AuthProvider>
-      <GraphQLProvider>
-        <MockDataProvider>
-          <FamilyProvider>
-            <ThemeProvider>
-              <BrowserRouter>
-                <Routes>
-                  <Route path="login" element={<LoginPage />} />
-                  <Route
-                    element={
-                      <ProtectedRoute>
-                        <FamilyGate>
-                          <AppLayout />
-                        </FamilyGate>
-                      </ProtectedRoute>
-                    }
-                  >
-                    <Route index element={<Navigate to="/feed" replace />} />
-                    <Route path="feed" element={<FeedPage />} />
-                    <Route path="feed/:postId" element={<PostDetailPage />} />
-                    <Route path="calendar" element={<CalendarPage />} />
-                    <Route path="calendar/month" element={<CalendarMonthPage />} />
-                    <Route path="calendar/:date/:eventId" element={<EventDetailPage />} />
-                    <Route path="tree" element={<TreePage />} />
-                    <Route path="tree/:personId" element={<PersonPage />} />
-                    <Route path="chores" element={<ChoresPage />} />
-                    <Route path="settings" element={<SettingsPage />} />
-                    <Route path="settings/members" element={<MembersPage />} />
-                  </Route>
-                </Routes>
-              </BrowserRouter>
-            </ThemeProvider>
-          </FamilyProvider>
-        </MockDataProvider>
-      </GraphQLProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <GraphQLProvider>
+          <MockDataProvider>
+            <FamilyProvider>
+              <ThemeProvider>
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="login" element={<LoginPage />} />
+                    <Route
+                      element={
+                        <ProtectedRoute>
+                          <FamilyGate>
+                            <AppLayout />
+                          </FamilyGate>
+                        </ProtectedRoute>
+                      }
+                    >
+                      <Route index element={<Navigate to="/feed" replace />} />
+                      <Route path="feed" element={<FeedPage />} />
+                      <Route path="feed/:postId" element={<PostDetailPage />} />
+                      <Route path="calendar" element={<CalendarPage />} />
+                      <Route path="calendar/month" element={<CalendarMonthPage />} />
+                      <Route path="calendar/:date/:eventId" element={<EventDetailPage />} />
+                      <Route path="tree" element={<TreePage />} />
+                      <Route path="tree/:personId" element={<PersonPage />} />
+                      <Route path="chores" element={<ChoresPage />} />
+                      <Route path="settings" element={<SettingsPage />} />
+                      <Route path="settings/members" element={<MembersPage />} />
+                      <Route path="*" element={<NotFoundPage />} />
+                    </Route>
+                  </Routes>
+                </BrowserRouter>
+              </ThemeProvider>
+            </FamilyProvider>
+          </MockDataProvider>
+        </GraphQLProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
