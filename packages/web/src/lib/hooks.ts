@@ -13,7 +13,6 @@ import {
   ADD_COMMENT_MUTATION,
   ADD_REACTION_MUTATION,
   DELETE_POST_MUTATION,
-  DELETE_COMMENT_MUTATION,
   FAMILY_EVENTS_QUERY,
   EVENT_DETAIL_QUERY,
   EVENT_RSVPS_QUERY,
@@ -24,9 +23,7 @@ import {
   FAMILY_CHORES_QUERY,
   CREATE_CHORE_MUTATION,
   COMPLETE_CHORE_MUTATION,
-  DELETE_CHORE_MUTATION,
   FAMILY_MEMBERS_QUERY,
-  FAMILY_PERSONS_QUERY,
   INVITE_MEMBER_MUTATION,
   UPDATE_MEMBER_ROLE_MUTATION,
   REMOVE_MEMBER_MUTATION,
@@ -38,7 +35,8 @@ import {
   FAMILY_TREE_QUERY,
   NOTIFICATION_PREFS_QUERY,
   UPDATE_NOTIFICATION_PREF_MUTATION,
-  REQUEST_UPLOAD_MUTATION,
+  GENERATE_UPLOAD_URL_MUTATION,
+  CONFIRM_MEDIA_UPLOAD_MUTATION,
 } from "./graphql-operations";
 
 // ─── Families ───
@@ -115,11 +113,11 @@ export function useFamilyFeed(familyId: string, limit?: number, cursor?: string)
   };
 }
 
-export function usePostDetail(postId: string) {
+export function usePostDetail(postId: string, familyId: string) {
   const [result] = useQuery({
     query: POST_DETAIL_QUERY,
-    variables: { postId },
-    pause: !postId,
+    variables: { postId, familyId },
+    pause: !postId || !familyId,
   });
   return { data: result.data as unknown, fetching: result.fetching, error: result.error };
 }
@@ -167,17 +165,12 @@ export function useDeletePost() {
   return { deletePost: executeMutation, loading: result.fetching, error: result.error };
 }
 
-export function useDeleteComment() {
-  const [result, executeMutation] = useMutation(DELETE_COMMENT_MUTATION);
-  return { deleteComment: executeMutation, loading: result.fetching, error: result.error };
-}
-
 // ─── Events ───
 
-export function useFamilyEvents(familyId: string) {
+export function useFamilyEvents(familyId: string, startDate: string, endDate: string) {
   const [result, reexecute] = useQuery({
     query: FAMILY_EVENTS_QUERY,
-    variables: { familyId },
+    variables: { familyId, startDate, endDate },
     pause: !familyId,
   });
   return {
@@ -188,11 +181,11 @@ export function useFamilyEvents(familyId: string) {
   };
 }
 
-export function useEventDetail(eventId: string) {
+export function useEventDetail(familyId: string, date: string, eventId: string) {
   const [result] = useQuery({
     query: EVENT_DETAIL_QUERY,
-    variables: { eventId },
-    pause: !eventId,
+    variables: { familyId, date, eventId },
+    pause: !eventId || !familyId || !date,
   });
   return { data: result.data as unknown, fetching: result.fetching, error: result.error };
 }
@@ -257,11 +250,6 @@ export function useCompleteChore() {
   return { completeChore: executeMutation, loading: result.fetching, error: result.error };
 }
 
-export function useDeleteChore() {
-  const [result, executeMutation] = useMutation(DELETE_CHORE_MUTATION);
-  return { deleteChore: executeMutation, loading: result.fetching, error: result.error };
-}
-
 // ─── Members ───
 
 export function useFamilyMembers(familyId: string) {
@@ -276,15 +264,6 @@ export function useFamilyMembers(familyId: string) {
     error: result.error,
     reexecute,
   };
-}
-
-export function useFamilyPersons(familyId: string) {
-  const [result] = useQuery({
-    query: FAMILY_PERSONS_QUERY,
-    variables: { familyId },
-    pause: !familyId,
-  });
-  return { data: result.data as unknown, fetching: result.fetching, error: result.error };
 }
 
 export function useInviteMember() {
@@ -353,11 +332,11 @@ export function useFamilyTree(familyId: string) {
 
 // ─── Notifications ───
 
-export function useNotificationPrefs(userId: string, familyId: string) {
+export function useNotificationPrefs(familyId: string) {
   const [result, reexecute] = useQuery({
     query: NOTIFICATION_PREFS_QUERY,
-    variables: { userId, familyId },
-    pause: !userId || !familyId,
+    variables: { familyId },
+    pause: !familyId,
   });
   return {
     data: result.data as unknown,
@@ -374,7 +353,12 @@ export function useUpdateNotificationPref() {
 
 // ─── Media ───
 
-export function useRequestUpload() {
-  const [result, executeMutation] = useMutation(REQUEST_UPLOAD_MUTATION);
-  return { requestUpload: executeMutation, loading: result.fetching, error: result.error };
+export function useGenerateUploadUrl() {
+  const [result, executeMutation] = useMutation(GENERATE_UPLOAD_URL_MUTATION);
+  return { generateUploadUrl: executeMutation, loading: result.fetching, error: result.error };
+}
+
+export function useConfirmMediaUpload() {
+  const [result, executeMutation] = useMutation(CONFIRM_MEDIA_UPLOAD_MUTATION);
+  return { confirmMediaUpload: executeMutation, loading: result.fetching, error: result.error };
 }

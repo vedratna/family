@@ -3,7 +3,7 @@ import { useMemo, useState, type SyntheticEvent } from "react";
 import { useParams, Link } from "react-router";
 import { useQuery } from "urql";
 
-import { FAMILY_RELATIONSHIPS_QUERY, FAMILY_PERSONS_QUERY } from "../lib/graphql-operations";
+import { FAMILY_RELATIONSHIPS_QUERY, FAMILY_MEMBERS_QUERY } from "../lib/graphql-operations";
 import { useCreateRelationship } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import type { PersonRelationship } from "../lib/transforms";
@@ -44,19 +44,19 @@ export function PersonPage() {
     pause: !isApiMode() || !activeFamilyId,
   });
 
-  const [personsResult] = useQuery({
-    query: FAMILY_PERSONS_QUERY,
+  const [membersResult] = useQuery({
+    query: FAMILY_MEMBERS_QUERY,
     variables: { familyId: activeFamilyId },
     pause: !isApiMode() || !activeFamilyId,
   });
 
   const persons = useMemo((): Person[] => {
     if (isApiMode()) {
-      const raw = personsResult.data as { familyPersons: Person[] } | undefined;
-      return raw?.familyPersons ?? [];
+      const raw = membersResult.data as { familyMembers: { person: Person }[] } | undefined;
+      return (raw?.familyMembers ?? []).map((m) => m.person);
     }
     return mockData.persons;
-  }, [personsResult.data, mockData.persons]);
+  }, [membersResult.data, mockData.persons]);
 
   const relationships = useMemo((): Relationship[] => {
     if (isApiMode()) {
@@ -91,7 +91,7 @@ export function PersonPage() {
       });
   }, [relationships, activeFamilyId, personId, persons]);
 
-  const loading = isApiMode() && (relsResult.fetching || personsResult.fetching);
+  const loading = isApiMode() && (relsResult.fetching || membersResult.fetching);
 
   function handleAddRelationship(e: SyntheticEvent) {
     e.preventDefault();

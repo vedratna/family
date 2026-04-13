@@ -2,7 +2,7 @@ import type { Chore, Person } from "@family-app/shared";
 import { useMemo, useState, type SyntheticEvent } from "react";
 import { useQuery } from "urql";
 
-import { FAMILY_CHORES_QUERY, FAMILY_PERSONS_QUERY } from "../lib/graphql-operations";
+import { FAMILY_CHORES_QUERY, FAMILY_MEMBERS_QUERY } from "../lib/graphql-operations";
 import { useCreateChore, useCompleteChore } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import { toChoreItems, type ChoreItem } from "../lib/transforms";
@@ -32,19 +32,19 @@ export function ChoresPage() {
     pause: !isApiMode() || !activeFamilyId,
   });
 
-  const [personsResult] = useQuery({
-    query: FAMILY_PERSONS_QUERY,
+  const [membersResult] = useQuery({
+    query: FAMILY_MEMBERS_QUERY,
     variables: { familyId: activeFamilyId },
     pause: !isApiMode() || !activeFamilyId,
   });
 
   const persons = useMemo((): Person[] => {
     if (isApiMode()) {
-      const raw = personsResult.data as { familyPersons: Person[] } | undefined;
-      return raw?.familyPersons ?? [];
+      const raw = membersResult.data as { familyMembers: { person: Person }[] } | undefined;
+      return (raw?.familyMembers ?? []).map((m) => m.person);
     }
     return mockData.persons;
-  }, [personsResult.data, mockData.persons]);
+  }, [membersResult.data, mockData.persons]);
 
   const choreItems = useMemo((): ChoreItem[] | null => {
     if (isApiMode()) {
@@ -94,11 +94,11 @@ export function ChoresPage() {
 
   function handleComplete(choreId: string) {
     if (isApiMode()) {
-      void completeChore({ input: { choreId } }).then(() => {
+      void completeChore({ familyId: activeFamilyId, choreId }).then(() => {
         reexecuteChores({ requestPolicy: "network-only" });
       });
     } else {
-      console.log("[mock] completeChore:", { choreId });
+      console.log("[mock] completeChore:", { familyId: activeFamilyId, choreId });
     }
   }
 

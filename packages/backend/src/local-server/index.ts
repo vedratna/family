@@ -216,12 +216,21 @@ const resolvers = {
       });
     },
 
+    postDetail: async (_: unknown, args: { postId: string; familyId: string }) => {
+      const result = await getFamilyFeed.execute({ familyId: args.familyId, limit: 100 });
+      return result.items.find((p: { id: string }) => p.id === args.postId) ?? null;
+    },
+
     postComments: async (_: unknown, args: { postId: string; limit?: number; cursor?: string }) => {
       return getPostComments.execute({
         postId: args.postId,
         ...(args.limit !== undefined && { limit: args.limit }),
         ...(args.cursor !== undefined && { cursor: args.cursor }),
       });
+    },
+
+    postReactions: async (_: unknown, args: { postId: string }) => {
+      return reactionRepo.getByPostId(args.postId);
     },
 
     // Calendar
@@ -238,6 +247,10 @@ const resolvers = {
 
     eventDetail: async (_: unknown, args: { familyId: string; date: string; eventId: string }) => {
       return eventRepo.getById(args.familyId, args.date, args.eventId);
+    },
+
+    eventRSVPs: async (_: unknown, args: { eventId: string }) => {
+      return eventRSVPRepo.getByEvent(args.eventId);
     },
 
     // Chores

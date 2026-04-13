@@ -30,9 +30,21 @@ export function CalendarMonthPage() {
   const mockData = useMockData();
   const { activeFamilyId } = useFamily();
 
+  // Fetch events for a wide date range (1 year back, 1 year forward)
+  const eventsStartDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
+    return d.toISOString().split("T")[0] ?? "";
+  }, []);
+  const eventsEndDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 1);
+    return d.toISOString().split("T")[0] ?? "";
+  }, []);
+
   const [eventsResult] = useQuery({
     query: FAMILY_EVENTS_QUERY,
-    variables: { familyId: activeFamilyId },
+    variables: { familyId: activeFamilyId, startDate: eventsStartDate, endDate: eventsEndDate },
     pause: !isApiMode() || !activeFamilyId,
   });
 
@@ -170,7 +182,7 @@ export function CalendarMonthPage() {
               {selectedDayEvents.map((event) => (
                 <Link
                   key={event.id}
-                  to={`/calendar/${event.id}`}
+                  to={`/calendar/${event.startDate}/${event.id}`}
                   className="p-3 bg-[var(--color-bg-card)] rounded-lg border border-[var(--color-border-secondary)] hover:border-[var(--color-border-primary)] transition-colors"
                 >
                   <p className="text-sm font-medium text-[var(--color-text-primary)]">

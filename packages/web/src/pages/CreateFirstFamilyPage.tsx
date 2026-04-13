@@ -30,7 +30,7 @@ export function CreateFirstFamilyPage() {
     if (!familyName.trim()) return;
 
     setError(null);
-    const result = await createFamily({ input: { name: familyName.trim(), themeName } });
+    const result = await createFamily({ name: familyName.trim(), themeName });
 
     if (result.error) {
       setError(result.error.message);

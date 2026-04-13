@@ -7,6 +7,7 @@ import { EVENT_DETAIL_QUERY, EVENT_RSVPS_QUERY } from "../lib/graphql-operations
 import { useRSVPEvent } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import { personName } from "../lib/transforms";
+import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -29,14 +30,15 @@ interface ApiRSVP {
 }
 
 export function EventDetailPage() {
-  const { eventId } = useParams<{ eventId: string }>();
+  const { eventId, date } = useParams<{ eventId: string; date: string }>();
   const mockData = useMockData();
+  const { activeFamilyId } = useFamily();
   const { rsvpEvent, loading: rsvpLoading } = useRSVPEvent();
 
   const [eventResult] = useQuery({
     query: EVENT_DETAIL_QUERY,
-    variables: { eventId: eventId ?? "" },
-    pause: !isApiMode() || eventId === undefined,
+    variables: { familyId: activeFamilyId, date: date ?? "", eventId: eventId ?? "" },
+    pause: !isApiMode() || eventId === undefined || !activeFamilyId || date === undefined,
   });
 
   const [rsvpsResult, reexecuteRsvps] = useQuery({
@@ -47,8 +49,8 @@ export function EventDetailPage() {
 
   const event = useMemo((): FamilyEvent | null => {
     if (isApiMode()) {
-      const raw = eventResult.data as { event: FamilyEvent | null } | undefined;
-      return raw?.event ?? null;
+      const raw = eventResult.data as { eventDetail: FamilyEvent | null } | undefined;
+      return raw?.eventDetail ?? null;
     }
     return mockData.events.find((e) => e.id === eventId) ?? null;
   }, [eventResult.data, mockData.events, eventId]);
@@ -73,7 +75,7 @@ export function EventDetailPage() {
 
   function handleRSVP(status: RSVPStatus) {
     if (isApiMode()) {
-      void rsvpEvent({ input: { eventId, status } }).then(() => {
+      void rsvpEvent({ eventId, status }).then(() => {
         reexecuteRsvps({ requestPolicy: "network-only" });
       });
     } else {

@@ -10,6 +10,7 @@ import {
 import { useAddComment } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import { toCommentItems, personName, computeTimeAgo, type CommentItem } from "../lib/transforms";
+import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
 
 interface ApiPost {
@@ -39,14 +40,15 @@ interface ApiReaction {
 export function PostDetailPage() {
   const { postId } = useParams<{ postId: string }>();
   const mockData = useMockData();
+  const { activeFamilyId } = useFamily();
   const { addComment, loading: commentLoading } = useAddComment();
 
   const [commentText, setCommentText] = useState("");
 
   const [postResult] = useQuery({
     query: POST_DETAIL_QUERY,
-    variables: { postId: postId ?? "" },
-    pause: !isApiMode() || postId === undefined,
+    variables: { postId: postId ?? "", familyId: activeFamilyId },
+    pause: !isApiMode() || postId === undefined || !activeFamilyId,
   });
 
   const [commentsResult, reexecuteComments] = useQuery({
@@ -63,24 +65,26 @@ export function PostDetailPage() {
 
   const post = useMemo(() => {
     if (isApiMode()) {
-      const raw = postResult.data as { post: ApiPost | null } | undefined;
-      return raw?.post ?? null;
+      const raw = postResult.data as { postDetail: ApiPost | null } | undefined;
+      return raw?.postDetail ?? null;
     }
     return mockData.posts.find((p) => p.id === postId) ?? null;
   }, [postResult.data, mockData.posts, postId]);
 
   const reactionCount = useMemo(() => {
     if (isApiMode()) {
-      const raw = reactionsResult.data as { reactions: ApiReaction[] } | undefined;
-      return raw?.reactions.length ?? 0;
+      const raw = reactionsResult.data as { postReactions: ApiReaction[] } | undefined;
+      return raw?.postReactions.length ?? 0;
     }
     return mockData.reactions.filter((r) => r.postId === postId).length;
   }, [reactionsResult.data, mockData.reactions, postId]);
 
   const commentItems = useMemo((): CommentItem[] => {
     if (isApiMode()) {
-      const raw = commentsResult.data as { comments: ApiComment[] } | undefined;
-      return (raw?.comments ?? []).map((c) => ({
+      const raw = commentsResult.data as
+        | { postComments: { items: ApiComment[]; cursor: string | null } }
+        | undefined;
+      return (raw?.postComments.items ?? []).map((c) => ({
         id: c.id,
         authorName: c.personId,
         textContent: c.textContent,
@@ -123,7 +127,9 @@ export function PostDetailPage() {
     if (!commentText.trim()) return;
 
     if (isApiMode()) {
-      void addComment({ input: { postId, textContent: commentText.trim() } }).then(() => {
+      void addComment({
+        input: { postId, familyId: activeFamilyId, textContent: commentText.trim() },
+      }).then(() => {
         reexecuteComments({ requestPolicy: "network-only" });
       });
     } else {

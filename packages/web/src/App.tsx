@@ -64,7 +64,7 @@ export function App() {
                     <Route path="feed/:postId" element={<PostDetailPage />} />
                     <Route path="calendar" element={<CalendarPage />} />
                     <Route path="calendar/month" element={<CalendarMonthPage />} />
-                    <Route path="calendar/:eventId" element={<EventDetailPage />} />
+                    <Route path="calendar/:date/:eventId" element={<EventDetailPage />} />
                     <Route path="tree" element={<TreePage />} />
                     <Route path="tree/:personId" element={<PersonPage />} />
                     <Route path="chores" element={<ChoresPage />} />

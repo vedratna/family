@@ -1,9 +1,9 @@
-import type { Role, FamilyMembership, Person } from "@family-app/shared";
+import type { Role, Person } from "@family-app/shared";
 import { useMemo, useState, type SyntheticEvent } from "react";
 import { Link } from "react-router";
 import { useQuery } from "urql";
 
-import { FAMILY_MEMBERS_QUERY, FAMILY_PERSONS_QUERY } from "../lib/graphql-operations";
+import { FAMILY_MEMBERS_QUERY } from "../lib/graphql-operations";
 import { useInviteMember } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import { toMemberItems, type MemberItem } from "../lib/transforms";
@@ -36,38 +36,28 @@ export function MembersPage() {
     pause: !isApiMode() || !activeFamilyId,
   });
 
-  const [personsResult] = useQuery({
-    query: FAMILY_PERSONS_QUERY,
-    variables: { familyId: activeFamilyId },
-    pause: !isApiMode() || !activeFamilyId,
-  });
-
   const members = useMemo((): MemberItem[] | null => {
     if (isApiMode()) {
-      if (membersResult.fetching || personsResult.fetching) return null;
-      const rawMembers = membersResult.data as { familyMembers: FamilyMembership[] } | undefined;
-      const rawPersons = personsResult.data as { familyPersons: Person[] } | undefined;
-      const apiMembers = rawMembers?.familyMembers ?? [];
-      const apiPersons = rawPersons?.familyPersons ?? [];
-      return apiMembers.map((m) => {
-        const person = apiPersons.find((p) => p.id === m.personId);
-        return {
-          personId: m.personId,
-          name: person?.name ?? m.personId,
-          role: m.role,
-          hasAppAccount: person?.userId !== undefined,
-        };
-      });
+      if (membersResult.fetching) return null;
+      const raw = membersResult.data as
+        | {
+            familyMembers: {
+              person: Person;
+              role: string;
+              joinedAt: string;
+              hasAppAccount: boolean;
+            }[];
+          }
+        | undefined;
+      return (raw?.familyMembers ?? []).map((m) => ({
+        personId: m.person.id,
+        name: m.person.name,
+        role: m.role as Role,
+        hasAppAccount: m.hasAppAccount,
+      }));
     }
     return toMemberItems(mockData.persons, mockData.memberships, activeFamilyId);
-  }, [
-    membersResult.fetching,
-    membersResult.data,
-    personsResult.fetching,
-    personsResult.data,
-    mockData,
-    activeFamilyId,
-  ]);
+  }, [membersResult.fetching, membersResult.data, mockData, activeFamilyId]);
 
   function handleInvite(e: SyntheticEvent) {
     e.preventDefault();
@@ -77,7 +67,8 @@ export function MembersPage() {
       familyId: activeFamilyId,
       phone: phone.trim(),
       name: name.trim(),
-      relationship: relationship.trim() || undefined,
+      relationshipToInviter: relationship.trim() || "relative",
+      inverseRelationshipLabel: relationship.trim() || "relative",
       role,
     };
 

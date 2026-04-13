@@ -62,7 +62,7 @@ function EventCard({ item }: { item: FeedItem & { type: "event" } }) {
 
   return (
     <Link
-      to={`/calendar/${item.id}`}
+      to={`/calendar/${item.date}/${item.id}`}
       className="block p-4 bg-[var(--color-accent-light)] rounded-xl border border-transparent hover:border-[var(--color-accent-primary)] transition-colors"
     >
       <div className="flex items-center gap-3">

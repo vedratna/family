@@ -30,7 +30,7 @@ export function SettingsPage() {
 
   function handleThemeChange(themeName: ThemeName) {
     if (isApiMode()) {
-      void updateFamilyTheme({ input: { familyId: activeFamilyId, themeName } }).then(() => {
+      void updateFamilyTheme({ familyId: activeFamilyId, themeName }).then(() => {
         refetchFamilies();
       });
     } else {
