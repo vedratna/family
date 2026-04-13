@@ -71,3 +71,37 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm audit --audit-level=critical || echo "::warning::npm audit found vulnerabilities — review before production deploy"
+
+  e2e-web:
+    name: E2E Web Tests
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    timeout-minutes: 10
+    services:
+      dynamodb:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8000:8000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run seed
+        env:
+          DYNAMODB_ENDPOINT: http://localhost:8000
+          TABLE_NAME: family-dev
+      - run: npm run test:e2e -w @family-app/web
+        env:
+          CI: true
+          DYNAMODB_ENDPOINT: http://localhost:8000
+          TABLE_NAME: family-dev
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: packages/web/playwright-report/
+          retention-days: 14
