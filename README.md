@@ -45,7 +45,12 @@ npm run test:coverage     # With coverage report
 npm run typecheck         # Type checking
 npm run lint              # ESLint
 npm run format:check      # Prettier
+
+# E2E tests (requires Docker + Playwright browsers)
+npm run test:e2e -w @family-app/web
 ```
+
+See [packages/web/e2e/README.md](packages/web/e2e/README.md) for E2E test details.
 
 ## Project Structure
 

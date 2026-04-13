@@ -140,10 +140,14 @@ function CognitoSignUpFlow() {
           Enter the verification code sent to {phone}.
         </p>
         <div>
-          <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+          <label
+            htmlFor="cognito-signup-otp"
+            className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1"
+          >
             Verification Code
           </label>
           <input
+            id="cognito-signup-otp"
             type="text"
             inputMode="numeric"
             maxLength={6}
@@ -180,10 +184,14 @@ function CognitoSignUpFlow() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+        <label
+          htmlFor="cognito-signup-phone"
+          className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1"
+        >
           Phone
         </label>
         <input
+          id="cognito-signup-phone"
           type="tel"
           className={INPUT_CLASS}
           placeholder="+1 555 000 0000"
@@ -194,10 +202,14 @@ function CognitoSignUpFlow() {
         />
       </div>
       <div>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+        <label
+          htmlFor="cognito-signup-name"
+          className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1"
+        >
           Display Name
         </label>
         <input
+          id="cognito-signup-name"
           type="text"
           className={INPUT_CLASS}
           placeholder="Your name"
@@ -275,10 +287,14 @@ function CognitoSignInFlow() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+        <label
+          htmlFor="cognito-signin-phone"
+          className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1"
+        >
           Phone
         </label>
         <input
+          id="cognito-signin-phone"
           type="tel"
           className={INPUT_CLASS}
           placeholder="+1 555 000 0000"
@@ -352,10 +368,14 @@ function LocalLoginForm() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+        <label
+          htmlFor="local-login-phone"
+          className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1"
+        >
           Phone
         </label>
         <input
+          id="local-login-phone"
           type="tel"
           className={INPUT_CLASS}
           placeholder="+1 555 000 0000"
@@ -441,10 +461,14 @@ function LocalSignupForm() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+        <label
+          htmlFor="local-signup-phone"
+          className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1"
+        >
           Phone
         </label>
         <input
+          id="local-signup-phone"
           type="tel"
           className={INPUT_CLASS}
           placeholder="+1 555 000 0000"
@@ -455,10 +479,14 @@ function LocalSignupForm() {
         />
       </div>
       <div>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+        <label
+          htmlFor="local-signup-name"
+          className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1"
+        >
           Display Name
         </label>
         <input
+          id="local-signup-name"
           type="text"
           className={INPUT_CLASS}
           placeholder="Your name"
