@@ -38,7 +38,13 @@ import {
   GetFamilyEvents,
   RSVPEvent,
 } from "../use-cases/calendar";
-import { CompleteChore, CreateChore, GetFamilyChores, RotateChore } from "../use-cases/chores";
+import {
+  CompleteChore,
+  CreateChore,
+  DeleteChore,
+  GetFamilyChores,
+  RotateChore,
+} from "../use-cases/chores";
 import {
   AcceptInvitation,
   AddNonAppPerson,
@@ -164,6 +170,7 @@ const rsvpEvent = new RSVPEvent(eventRSVPRepo);
 const getFamilyChores = new GetFamilyChores(choreRepo);
 const createChore = new CreateChore(choreRepo);
 const completeChore = new CompleteChore(choreRepo);
+const deleteChore = new DeleteChore(choreRepo);
 const rotateChore = new RotateChore(choreRepo);
 
 const getRelationships = new GetRelationships(relationshipRepo);
@@ -224,7 +231,11 @@ const resolvers = {
     myFamilies: async (_: unknown, __: unknown, ctx: Context) => {
       const userId = await resolveUserId(ctx);
       const results = await getUserFamilies.execute(userId);
-      return results.map((r) => ({ family: r.family, role: r.membership.role }));
+      return results.map((r) => ({
+        family: r.family,
+        role: r.membership.role,
+        personId: r.membership.personId,
+      }));
     },
 
     // Family
@@ -697,6 +708,16 @@ const resolvers = {
 
     completeChore: async (_: unknown, args: { familyId: string; choreId: string }) => {
       await completeChore.execute(args.familyId, args.choreId);
+      return true;
+    },
+
+    deleteChore: async (_: unknown, args: { familyId: string; choreId: string }, ctx: Context) => {
+      const { role } = await resolveRequester(ctx, args.familyId);
+      await deleteChore.execute({
+        familyId: args.familyId,
+        choreId: args.choreId,
+        requesterRole: role,
+      });
       return true;
     },
 

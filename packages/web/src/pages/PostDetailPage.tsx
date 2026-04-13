@@ -1,7 +1,8 @@
 import { useMemo, useState, type SyntheticEvent } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, Link, useNavigate } from "react-router";
 import { useQuery } from "urql";
 
+import { ConfirmModal } from "../components/ConfirmModal";
 import { Loading } from "../components/Loading";
 import { QueryError } from "../components/QueryError";
 import { formatErrorMessage } from "../lib/error-utils";
@@ -10,7 +11,7 @@ import {
   POST_COMMENTS_QUERY,
   POST_REACTIONS_QUERY,
 } from "../lib/graphql-operations";
-import { useAddComment } from "../lib/hooks";
+import { useAddComment, useDeletePost, useAddReaction, useRemoveReaction } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import { toCommentItems, personName, computeTimeAgo, type CommentItem } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
@@ -44,12 +45,19 @@ interface ApiReaction {
 
 export function PostDetailPage() {
   const { postId } = useParams<{ postId: string }>();
+  const navigate = useNavigate();
   const mockData = useMockData();
-  const { activeFamilyId } = useFamily();
+  const { activeFamilyId, activePersonId } = useFamily();
   const { addComment, loading: commentLoading } = useAddComment();
+  const { deletePost, loading: deleteLoading } = useDeletePost();
+  const { addReaction, loading: addReactionLoading } = useAddReaction();
+  const { removeReaction, loading: removeReactionLoading } = useRemoveReaction();
 
   const [commentText, setCommentText] = useState("");
   const [commentError, setCommentError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [reactionError, setReactionError] = useState<string | null>(null);
 
   const [postResult, reexecutePost] = useQuery({
     query: POST_DETAIL_QUERY,
@@ -77,13 +85,20 @@ export function PostDetailPage() {
     return mockData.posts.find((p) => p.id === postId) ?? null;
   }, [postResult.data, mockData.posts, postId]);
 
-  const reactionCount = useMemo(() => {
+  const reactions = useMemo((): ApiReaction[] => {
     if (isApiMode()) {
       const raw = reactionsResult.data as { postReactions: ApiReaction[] } | undefined;
-      return raw?.postReactions.length ?? 0;
+      return raw?.postReactions ?? [];
     }
-    return mockData.reactions.filter((r) => r.postId === postId).length;
+    return mockData.reactions.filter((r) => r.postId === postId) as ApiReaction[];
   }, [reactionsResult.data, mockData.reactions, postId]);
+
+  const reactionCount = reactions.length;
+
+  const hasReacted = useMemo(() => {
+    if (activePersonId === undefined) return false;
+    return reactions.some((r) => r.personId === activePersonId);
+  }, [reactions, activePersonId]);
 
   const commentItems = useMemo((): CommentItem[] => {
     if (isApiMode()) {
@@ -172,7 +187,7 @@ export function PostDetailPage() {
     );
   }
 
-  const authorName = isApiMode()
+  const authorLabel = isApiMode()
     ? (post as ApiPost).authorName
     : personName(mockData.persons, post.authorPersonId);
 
@@ -198,6 +213,51 @@ export function PostDetailPage() {
     }
   }
 
+  function handleDeletePost() {
+    setDeleteError(null);
+    if (isApiMode()) {
+      void deletePost({ familyId: activeFamilyId, postId }).then((result) => {
+        if (result.error) {
+          setDeleteError(formatErrorMessage(result.error));
+          setShowDeleteModal(false);
+          return;
+        }
+        setShowDeleteModal(false);
+        void navigate("/feed");
+      });
+    } else {
+      console.log("[mock] deletePost:", { familyId: activeFamilyId, postId });
+      setShowDeleteModal(false);
+      void navigate("/feed");
+    }
+  }
+
+  function handleReactionToggle() {
+    setReactionError(null);
+    if (!isApiMode()) {
+      console.log("[mock] toggleReaction:", { postId });
+      return;
+    }
+
+    if (hasReacted) {
+      void removeReaction({ postId }).then((result) => {
+        if (result.error) {
+          setReactionError(formatErrorMessage(result.error));
+          return;
+        }
+        reexecuteReactions({ requestPolicy: "network-only" });
+      });
+    } else {
+      void addReaction({ postId, emoji: "\u2764\uFE0F" }).then((result) => {
+        if (result.error) {
+          setReactionError(formatErrorMessage(result.error));
+          return;
+        }
+        reexecuteReactions({ requestPolicy: "network-only" });
+      });
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto p-4">
       <Link to="/feed" className="text-sm text-[var(--color-accent-primary)] hover:underline">
@@ -207,24 +267,57 @@ export function PostDetailPage() {
       <div className="mt-4 p-4 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border-secondary)]">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-10 h-10 rounded-full bg-[var(--color-accent-light)] flex items-center justify-center text-sm font-semibold text-[var(--color-accent-primary)]">
-            {authorName.charAt(0)}
+            {authorLabel.charAt(0)}
           </div>
           <div>
-            <p className="text-sm font-semibold text-[var(--color-text-primary)]">{authorName}</p>
+            <p className="text-sm font-semibold text-[var(--color-text-primary)]">{authorLabel}</p>
           </div>
         </div>
         <p className="text-sm text-[var(--color-text-primary)] leading-relaxed mb-3">
           {post.textContent}
         </p>
-        <div className="flex gap-4 text-xs text-[var(--color-text-secondary)]">
-          <span>
-            {"\u2764\uFE0F"} {reactionCount}
-          </span>
+        <div className="flex items-center gap-4 text-xs text-[var(--color-text-secondary)]">
+          <button
+            type="button"
+            onClick={handleReactionToggle}
+            disabled={addReactionLoading || removeReactionLoading}
+            className="flex items-center gap-1 hover:opacity-80 transition-opacity disabled:opacity-50"
+          >
+            <span>{hasReacted ? "\u2764\uFE0F" : "\uD83E\uDD0D"}</span>
+            <span>{reactionCount}</span>
+          </button>
           <span>
             {"\uD83D\uDCAC"} {commentItems.length}
           </span>
         </div>
+        {reactionError !== null && <p className="text-xs text-red-600 mt-1">{reactionError}</p>}
       </div>
+
+      {/* Delete Post */}
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            setShowDeleteModal(true);
+          }}
+          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+        >
+          Delete Post
+        </button>
+        {deleteError !== null && <span className="text-sm text-red-600">{deleteError}</span>}
+      </div>
+
+      <ConfirmModal
+        open={showDeleteModal}
+        title="Delete Post"
+        message="Delete this post? This cannot be undone."
+        confirmLabel="Delete"
+        loading={deleteLoading}
+        onConfirm={handleDeletePost}
+        onCancel={() => {
+          setShowDeleteModal(false);
+        }}
+      />
 
       <div className="mt-6">
         <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">

@@ -25,6 +25,8 @@ import {
   FAMILY_CHORES_QUERY,
   CREATE_CHORE_MUTATION,
   COMPLETE_CHORE_MUTATION,
+  DELETE_CHORE_MUTATION,
+  REMOVE_REACTION_MUTATION,
   FAMILY_MEMBERS_QUERY,
   INVITE_MEMBER_MUTATION,
   UPDATE_MEMBER_ROLE_MUTATION,
@@ -197,6 +199,11 @@ export function useDeletePost() {
   return { deletePost: executeMutation, loading: result.fetching, error: result.error };
 }
 
+export function useRemoveReaction() {
+  const [result, executeMutation] = useMutation(REMOVE_REACTION_MUTATION);
+  return { removeReaction: executeMutation, loading: result.fetching, error: result.error };
+}
+
 // ─── Events ───
 
 export function useFamilyEvents(familyId: string, startDate: string, endDate: string) {
@@ -280,6 +287,11 @@ export function useCreateChore() {
 export function useCompleteChore() {
   const [result, executeMutation] = useMutation(COMPLETE_CHORE_MUTATION);
   return { completeChore: executeMutation, loading: result.fetching, error: result.error };
+}
+
+export function useDeleteChore() {
+  const [result, executeMutation] = useMutation(DELETE_CHORE_MUTATION);
+  return { deleteChore: executeMutation, loading: result.fetching, error: result.error };
 }
 
 // ─── Members ───

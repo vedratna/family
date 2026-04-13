@@ -3,11 +3,12 @@ import { useMemo, useState, type SyntheticEvent } from "react";
 import { Link } from "react-router";
 import { useQuery } from "urql";
 
+import { ConfirmModal } from "../components/ConfirmModal";
 import { Loading } from "../components/Loading";
 import { QueryError } from "../components/QueryError";
 import { formatErrorMessage } from "../lib/error-utils";
 import { FAMILY_MEMBERS_QUERY } from "../lib/graphql-operations";
-import { useInviteMember } from "../lib/hooks";
+import { useInviteMember, useRemoveMember, useUpdateMemberRole } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import { toMemberItems, type MemberItem } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
@@ -24,8 +25,10 @@ const ROLE_OPTIONS: Role[] = ["owner", "admin", "editor", "viewer"];
 
 export function MembersPage() {
   const mockData = useMockData();
-  const { activeFamilyId, activeFamily } = useFamily();
+  const { activeFamilyId, activeFamily, activePersonId } = useFamily();
   const { inviteMember, loading: inviteLoading } = useInviteMember();
+  const { removeMember, loading: removeLoading } = useRemoveMember();
+  const { updateMemberRole } = useUpdateMemberRole();
 
   const [showForm, setShowForm] = useState(false);
   const [phone, setPhone] = useState("");
@@ -33,6 +36,9 @@ export function MembersPage() {
   const [relationship, setRelationship] = useState("");
   const [role, setRole] = useState<Role>("viewer");
   const [inviteError, setInviteError] = useState<string | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const [roleError, setRoleError] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
 
   const [membersResult, reexecuteMembers] = useQuery({
     query: FAMILY_MEMBERS_QUERY,
@@ -97,6 +103,48 @@ export function MembersPage() {
       setRelationship("");
       setRole("viewer");
       setShowForm(false);
+    }
+  }
+
+  function handleRemoveMember() {
+    if (removeTarget === null) return;
+    setRemoveError(null);
+    if (isApiMode()) {
+      void removeMember({ familyId: activeFamilyId, personId: removeTarget }).then((result) => {
+        if (result.error) {
+          setRemoveError(formatErrorMessage(result.error));
+          setRemoveTarget(null);
+          return;
+        }
+        setRemoveTarget(null);
+        reexecuteMembers({ requestPolicy: "network-only" });
+      });
+    } else {
+      console.log("[mock] removeMember:", { familyId: activeFamilyId, personId: removeTarget });
+      setRemoveTarget(null);
+    }
+  }
+
+  function handleRoleChange(memberPersonId: string, newRole: Role) {
+    setRoleError(null);
+    if (isApiMode()) {
+      void updateMemberRole({
+        familyId: activeFamilyId,
+        personId: memberPersonId,
+        role: newRole,
+      }).then((result) => {
+        if (result.error) {
+          setRoleError(formatErrorMessage(result.error));
+          return;
+        }
+        reexecuteMembers({ requestPolicy: "network-only" });
+      });
+    } else {
+      console.log("[mock] updateMemberRole:", {
+        familyId: activeFamilyId,
+        personId: memberPersonId,
+        role: newRole,
+      });
     }
   }
 
@@ -206,33 +254,75 @@ export function MembersPage() {
         </form>
       )}
 
+      {removeError !== null && <p className="text-sm text-red-600 mb-3">{removeError}</p>}
+      {roleError !== null && <p className="text-sm text-red-600 mb-3">{roleError}</p>}
+
       <div className="flex flex-col gap-2">
-        {members.map((member) => (
-          <div
-            key={member.personId}
-            className="flex items-center justify-between p-3 bg-[var(--color-bg-card)] rounded-lg border border-[var(--color-border-secondary)]"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[var(--color-accent-light)] flex items-center justify-center text-sm font-semibold text-[var(--color-accent-primary)]">
-                {member.name.charAt(0)}
+        {members.map((member) => {
+          const isSelf = member.personId === activePersonId;
+          return (
+            <div
+              key={member.personId}
+              className="flex items-center justify-between p-3 bg-[var(--color-bg-card)] rounded-lg border border-[var(--color-border-secondary)]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-[var(--color-accent-light)] flex items-center justify-center text-sm font-semibold text-[var(--color-accent-primary)]">
+                  {member.name.charAt(0)}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                    {member.name}
+                    {isSelf && (
+                      <span className="ml-1 text-xs text-[var(--color-text-tertiary)]">(you)</span>
+                    )}
+                  </p>
+                  {member.hasAppAccount && (
+                    <p className="text-xs text-[var(--color-text-tertiary)]">App account linked</p>
+                  )}
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                  {member.name}
-                </p>
-                {member.hasAppAccount && (
-                  <p className="text-xs text-[var(--color-text-tertiary)]">App account linked</p>
+              <div className="flex items-center gap-2">
+                <select
+                  value={member.role}
+                  disabled={isSelf}
+                  onChange={(e) => {
+                    handleRoleChange(member.personId, e.target.value as Role);
+                  }}
+                  className={`text-xs font-medium px-2 py-1 rounded-full border-0 ${ROLE_STYLES[member.role] ?? ""} ${isSelf ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  {ROLE_OPTIONS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+                {!isSelf && (
+                  <button
+                    onClick={() => {
+                      setRemoveTarget(member.personId);
+                    }}
+                    className="px-2 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                  >
+                    Remove
+                  </button>
                 )}
               </div>
             </div>
-            <span
-              className={`text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_STYLES[member.role] ?? ""}`}
-            >
-              {member.role}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      <ConfirmModal
+        open={removeTarget !== null}
+        title="Remove Member"
+        message="Remove this member from the family? This cannot be undone."
+        confirmLabel="Remove"
+        loading={removeLoading}
+        onConfirm={handleRemoveMember}
+        onCancel={() => {
+          setRemoveTarget(null);
+        }}
+      />
     </div>
   );
 }

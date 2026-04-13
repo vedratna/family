@@ -3,13 +3,14 @@ import { useMemo, useState, type SyntheticEvent } from "react";
 import { useParams, Link } from "react-router";
 import { useQuery } from "urql";
 
+import { ConfirmModal } from "../components/ConfirmModal";
+import { InlineEdit } from "../components/InlineEdit";
 import { Loading } from "../components/Loading";
 import { QueryError } from "../components/QueryError";
 import { formatErrorMessage } from "../lib/error-utils";
 import { FAMILY_RELATIONSHIPS_QUERY, FAMILY_MEMBERS_QUERY } from "../lib/graphql-operations";
-import { useCreateRelationship } from "../lib/hooks";
+import { useCreateRelationship, useEditRelationship, useDeleteRelationship } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
-import type { PersonRelationship } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
 
@@ -29,11 +30,25 @@ const RELATIONSHIP_TYPES: RelationshipType[] = [
   "custom",
 ];
 
+interface EnrichedRelationship {
+  personAId: string;
+  personBId: string;
+  aToBLabel: string;
+  bToALabel: string;
+  isA: boolean;
+  label: string;
+  otherPersonName: string;
+  type: RelationshipType;
+  status: string;
+}
+
 export function PersonPage() {
   const { personId } = useParams<{ personId: string }>();
   const mockData = useMockData();
   const { activeFamilyId } = useFamily();
   const { createRelationship, loading: relLoading } = useCreateRelationship();
+  const { editRelationship } = useEditRelationship();
+  const { deleteRelationship, loading: deleteRelLoading } = useDeleteRelationship();
 
   const [showForm, setShowForm] = useState(false);
   const [otherPersonId, setOtherPersonId] = useState("");
@@ -41,6 +56,11 @@ export function PersonPage() {
   const [aToBLabel, setAToBLabel] = useState("");
   const [bToALabel, setBToALabel] = useState("");
   const [relError, setRelError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ personAId: string; personBId: string } | null>(
+    null,
+  );
 
   const [relsResult, reexecuteRels] = useQuery({
     query: FAMILY_RELATIONSHIPS_QUERY,
@@ -77,7 +97,7 @@ export function PersonPage() {
     [persons, activeFamilyId, personId],
   );
 
-  const personRelationships = useMemo<PersonRelationship[]>(() => {
+  const personRelationships = useMemo<EnrichedRelationship[]>(() => {
     const familyRels = relationships.filter((r) => r.familyId === activeFamilyId);
     return familyRels
       .filter((r) => r.personAId === personId || r.personBId === personId)
@@ -87,6 +107,11 @@ export function PersonPage() {
         const label = isA ? r.aToBLabel : r.bToALabel;
         const other = persons.find((p) => p.id === otherPId);
         return {
+          personAId: r.personAId,
+          personBId: r.personBId,
+          aToBLabel: r.aToBLabel,
+          bToALabel: r.bToALabel,
+          isA,
           label,
           otherPersonName: other?.name ?? otherPId,
           type: r.type,
@@ -131,6 +156,55 @@ export function PersonPage() {
       setAToBLabel("");
       setBToALabel("");
       setShowForm(false);
+    }
+  }
+
+  function handleEditLabel(
+    rel: EnrichedRelationship,
+    field: "aToBLabel" | "bToALabel",
+    next: string,
+  ) {
+    setEditError(null);
+    const input: Record<string, string> = {
+      familyId: activeFamilyId,
+      personAId: rel.personAId,
+      personBId: rel.personBId,
+    };
+    input[field] = next;
+
+    if (isApiMode()) {
+      void editRelationship({ input }).then((result) => {
+        if (result.error) {
+          setEditError(formatErrorMessage(result.error));
+          return;
+        }
+        reexecuteRels({ requestPolicy: "network-only" });
+      });
+    } else {
+      console.log("[mock] editRelationship:", input);
+    }
+  }
+
+  function handleDeleteRelationship() {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    if (isApiMode()) {
+      void deleteRelationship({
+        familyId: activeFamilyId,
+        personAId: deleteTarget.personAId,
+        personBId: deleteTarget.personBId,
+      }).then((result) => {
+        if (result.error) {
+          setDeleteError(formatErrorMessage(result.error));
+          setDeleteTarget(null);
+          return;
+        }
+        setDeleteTarget(null);
+        reexecuteRels({ requestPolicy: "network-only" });
+      });
+    } else {
+      console.log("[mock] deleteRelationship:", deleteTarget);
+      setDeleteTarget(null);
     }
   }
 
@@ -271,29 +345,61 @@ export function PersonPage() {
         </form>
       )}
 
+      {editError !== null && <p className="text-sm text-red-600 mb-3">{editError}</p>}
+      {deleteError !== null && <p className="text-sm text-red-600 mb-3">{deleteError}</p>}
+
       <div className="flex flex-col gap-2">
         {personRelationships.map((rel, i) => (
           <div
             key={i}
             className="flex items-center justify-between p-3 bg-[var(--color-bg-card)] rounded-lg border border-[var(--color-border-secondary)]"
           >
-            <div>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                {rel.label} &mdash; {rel.otherPersonName}
-              </p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1 text-sm font-medium text-[var(--color-text-primary)]">
+                <InlineEdit
+                  value={rel.isA ? rel.aToBLabel : rel.bToALabel}
+                  onSave={(next) => {
+                    handleEditLabel(rel, rel.isA ? "aToBLabel" : "bToALabel", next);
+                  }}
+                />
+                <span>&mdash;</span>
+                <span>{rel.otherPersonName}</span>
+              </div>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{rel.type}</p>
             </div>
-            <span
-              className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE[rel.status] ?? ""}`}
-            >
-              {rel.status}
-            </span>
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE[rel.status] ?? ""}`}
+              >
+                {rel.status}
+              </span>
+              <button
+                onClick={() => {
+                  setDeleteTarget({ personAId: rel.personAId, personBId: rel.personBId });
+                }}
+                className="px-2 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         ))}
         {personRelationships.length === 0 && (
           <p className="text-sm text-[var(--color-text-tertiary)]">No relationships found.</p>
         )}
       </div>
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Delete Relationship"
+        message="Delete this relationship? This cannot be undone."
+        confirmLabel="Delete"
+        loading={deleteRelLoading}
+        onConfirm={handleDeleteRelationship}
+        onCancel={() => {
+          setDeleteTarget(null);
+        }}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ export const MY_FAMILIES_QUERY = `
     myFamilies {
       family { id name createdBy themeName createdAt }
       role
+      personId
     }
   }
 `;
@@ -171,6 +172,12 @@ export const RSVP_EVENT_MUTATION = `
 export const DELETE_EVENT_MUTATION = `
   mutation DeleteEvent($familyId: ID!, $date: String!, $eventId: ID!) {
     deleteEvent(familyId: $familyId, date: $date, eventId: $eventId)
+  }
+`;
+
+export const DELETE_CHORE_MUTATION = `
+  mutation DeleteChore($familyId: ID!, $choreId: ID!) {
+    deleteChore(familyId: $familyId, choreId: $choreId)
   }
 `;
 
