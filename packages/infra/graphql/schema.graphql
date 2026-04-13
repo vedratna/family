@@ -24,6 +24,9 @@ type Query {
 
   # Notifications
   notificationPreferences(familyId: ID!): [NotificationPreference!]!
+
+  # User lookup
+  userByPhone(phone: String!): User
 }
 
 type Mutation {

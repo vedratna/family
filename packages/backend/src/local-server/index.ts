@@ -255,6 +255,12 @@ const resolvers = {
       return serializeTree(tree);
     },
 
+    // User lookup
+    userByPhone: async (_: unknown, args: { phone: string }) => {
+      const user = await userRepo.getByPhone(args.phone);
+      return user ?? null;
+    },
+
     // Notifications
     notificationPreferences: async (_: unknown, args: { familyId: string }, ctx: Context) => {
       const userId = await resolveUserId(ctx);

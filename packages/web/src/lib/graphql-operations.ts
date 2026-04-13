@@ -277,6 +277,24 @@ export const UPDATE_NOTIFICATION_PREF_MUTATION = `
   }
 `;
 
+// ─── Auth ───
+
+export const REGISTER_MUTATION = `
+  mutation Register($phone: String!, $cognitoSub: String!, $displayName: String!) {
+    register(phone: $phone, cognitoSub: $cognitoSub, displayName: $displayName) {
+      id phone displayName createdAt
+    }
+  }
+`;
+
+export const USER_BY_PHONE_QUERY = `
+  query UserByPhone($phone: String!) {
+    userByPhone(phone: $phone) {
+      id phone displayName createdAt
+    }
+  }
+`;
+
 // ─── Media ───
 
 export const REQUEST_UPLOAD_MUTATION = `

@@ -41,7 +41,13 @@ export default [
             },
             {
               from: "handlers",
-              allow: ["use-cases", "domain", "shared", "repositories-interfaces", "repositories-dynamodb"],
+              allow: [
+                "use-cases",
+                "domain",
+                "shared",
+                "repositories-interfaces",
+                "repositories-dynamodb",
+              ],
             },
             {
               from: "shared",

@@ -4,7 +4,7 @@ export const MOCK_FAMILY_TREE: SerializedTree = {
   nodes: [
     {
       personId: "person-grandma",
-      name: "Grandma Sharma",
+      name: "Grandma Mouse",
       hasAppAccount: true,
       generation: 0,
       spouseIds: [],
@@ -13,7 +13,7 @@ export const MOCK_FAMILY_TREE: SerializedTree = {
     },
     {
       personId: "person-rajesh",
-      name: "Rajesh Sharma",
+      name: "Mickey Mouse",
       hasAppAccount: true,
       generation: 1,
       spouseIds: ["person-priya"],
@@ -22,7 +22,7 @@ export const MOCK_FAMILY_TREE: SerializedTree = {
     },
     {
       personId: "person-priya",
-      name: "Priya Sharma",
+      name: "Minnie Mouse",
       hasAppAccount: true,
       generation: 1,
       spouseIds: ["person-rajesh"],
@@ -31,7 +31,7 @@ export const MOCK_FAMILY_TREE: SerializedTree = {
     },
     {
       personId: "person-sunita",
-      name: "Sunita Sharma",
+      name: "Daisy Duck",
       hasAppAccount: false,
       generation: 1,
       spouseIds: [],
@@ -40,7 +40,7 @@ export const MOCK_FAMILY_TREE: SerializedTree = {
     },
     {
       personId: "person-amit",
-      name: "Amit Sharma",
+      name: "Donald Duck",
       hasAppAccount: true,
       generation: 2,
       spouseIds: [],

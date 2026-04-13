@@ -1,6 +1,8 @@
 import { useMutation, useQuery } from "urql";
 
 import {
+  REGISTER_MUTATION,
+  USER_BY_PHONE_QUERY,
   FAMILY_FEED_QUERY,
   POST_DETAIL_QUERY,
   POST_COMMENTS_QUERY,
@@ -36,6 +38,31 @@ import {
   UPDATE_NOTIFICATION_PREF_MUTATION,
   REQUEST_UPLOAD_MUTATION,
 } from "./graphql-operations";
+
+// ─── Auth ───
+
+export function useRegister() {
+  const [result, executeMutation] = useMutation(REGISTER_MUTATION);
+  return { register: executeMutation, loading: result.fetching, error: result.error };
+}
+
+export function useUserByPhone(phone: string, pause = false) {
+  const [result, reexecute] = useQuery({
+    query: USER_BY_PHONE_QUERY,
+    variables: { phone },
+    pause: pause || !phone,
+  });
+  return {
+    data: result.data as
+      | {
+          userByPhone: { id: string; phone: string; displayName: string; createdAt: string } | null;
+        }
+      | undefined,
+    fetching: result.fetching,
+    error: result.error,
+    reexecute,
+  };
+}
 
 // ─── Feed / Posts ───
 
