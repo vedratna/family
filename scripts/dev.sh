@@ -8,6 +8,12 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+# Kill any leftover API server on port 4000
+if lsof -ti:4000 > /dev/null 2>&1; then
+  echo "Killing leftover process on port 4000..."
+  lsof -ti:4000 | xargs kill -9 2>/dev/null || true
+fi
+
 echo "Starting DynamoDB Local..."
 docker compose up dynamodb-local -d
 
