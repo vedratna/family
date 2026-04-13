@@ -12,6 +12,7 @@ interface CreatePostInput {
   authorPersonId: string;
   textContent: string;
   requesterRole: Role;
+  mediaIds?: string[];
 }
 
 export class CreatePost {
@@ -35,6 +36,8 @@ export class CreatePost {
       textContent: input.textContent,
       isSystemPost: false,
       createdAt: new Date().toISOString(),
+      ...(input.mediaIds !== undefined &&
+        input.mediaIds.length > 0 && { mediaIds: input.mediaIds }),
     };
 
     await this.postRepo.create(post);

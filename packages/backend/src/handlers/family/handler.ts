@@ -7,6 +7,7 @@ import { DynamoInvitationRepository } from "../../repositories/dynamodb/invitati
 import { DynamoMembershipRepository } from "../../repositories/dynamodb/membership-repo";
 import { DynamoNotificationPrefRepository } from "../../repositories/dynamodb/notification-pref-repo";
 import { DynamoPersonRepository } from "../../repositories/dynamodb/person-repo";
+import { S3StorageService } from "../../repositories/dynamodb/s3-storage-service";
 import { DynamoUserRepository } from "../../repositories/dynamodb/user-repo";
 import {
   AcceptInvitation,
@@ -19,6 +20,7 @@ import {
   UpdateFamilyTheme,
   UpdateMemberRole,
 } from "../../use-cases/family";
+import { resolveProfilePhotoUrl } from "../_shared/enrichment";
 
 const userRepo = new DynamoUserRepository();
 const familyRepo = new DynamoFamilyRepository();
@@ -26,6 +28,7 @@ const personRepo = new DynamoPersonRepository();
 const membershipRepo = new DynamoMembershipRepository();
 const invitationRepo = new DynamoInvitationRepository();
 const notifPrefRepo = new DynamoNotificationPrefRepository();
+const storageService = new S3StorageService();
 
 const getUserFamilies = new GetUserFamilies(membershipRepo, familyRepo);
 const createFamily = new CreateFamily(familyRepo, personRepo, membershipRepo, notifPrefRepo);
@@ -123,7 +126,13 @@ async function handleFamilyMembers(event: AppSyncResolverEvent<HandlerArgs>): Pr
     membershipRepo.getByFamilyId(familyId),
     personRepo.getByFamilyId(familyId),
   ]);
-  return { memberships, persons };
+  const enrichedPersons = await Promise.all(
+    persons.map(async (p) => ({
+      ...p,
+      profilePhotoUrl: await resolveProfilePhotoUrl(p.profilePhotoKey, storageService),
+    })),
+  );
+  return { memberships, persons: enrichedPersons };
 }
 
 async function handleCreateFamily(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {

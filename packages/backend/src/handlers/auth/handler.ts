@@ -1,10 +1,13 @@
 import type { AppSyncResolverEvent } from "aws-lambda";
 
 import { DomainError } from "../../domain/errors";
+import { S3StorageService } from "../../repositories/dynamodb/s3-storage-service";
 import { DynamoUserRepository } from "../../repositories/dynamodb/user-repo";
 import { RegisterWithPhone, UpdateUserProfile } from "../../use-cases/auth";
+import { resolveProfilePhotoUrl } from "../_shared/enrichment";
 
 const userRepo = new DynamoUserRepository();
+const storageService = new S3StorageService();
 const registerUseCase = new RegisterWithPhone(userRepo);
 const updateProfileUseCase = new UpdateUserProfile(userRepo);
 
@@ -38,7 +41,8 @@ async function handleRegister(event: AppSyncResolverEvent<HandlerArgs>): Promise
     cognitoSub: args.cognitoSub as string,
     displayName: args.displayName as string,
   });
-  return result.user;
+  const profilePhotoUrl = await resolveProfilePhotoUrl(result.user.profilePhotoKey, storageService);
+  return { ...result.user, profilePhotoUrl };
 }
 
 async function handleUpdateProfile(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
@@ -58,5 +62,6 @@ async function handleUpdateProfile(event: AppSyncResolverEvent<HandlerArgs>): Pr
       dateOfBirth?: string;
     },
   });
-  return result.user;
+  const profilePhotoUrl = await resolveProfilePhotoUrl(result.user.profilePhotoKey, storageService);
+  return { ...result.user, profilePhotoUrl };
 }

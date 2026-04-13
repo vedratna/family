@@ -16,6 +16,7 @@ export class DynamoPostRepository implements IPostRepository {
       isSystemPost: post.isSystemPost,
       createdAt: post.createdAt,
       entityType: "Post",
+      ...(post.mediaIds !== undefined && post.mediaIds.length > 0 && { mediaIds: post.mediaIds }),
     });
 
     // Lookup item for getById (postId only)
@@ -29,6 +30,7 @@ export class DynamoPostRepository implements IPostRepository {
       isSystemPost: post.isSystemPost,
       createdAt: post.createdAt,
       entityType: "PostLookup",
+      ...(post.mediaIds !== undefined && post.mediaIds.length > 0 && { mediaIds: post.mediaIds }),
     });
   }
 
@@ -77,6 +79,7 @@ export class DynamoPostRepository implements IPostRepository {
   }
 
   private toPost(postId: string, familyId: string, item: Record<string, unknown>): Post {
+    const mediaIds = item["mediaIds"] as string[] | undefined;
     return {
       id: postId,
       familyId,
@@ -84,6 +87,7 @@ export class DynamoPostRepository implements IPostRepository {
       authorPersonId: item["authorPersonId"] as string,
       isSystemPost: item["isSystemPost"] as boolean,
       createdAt: item["createdAt"] as string,
+      ...(mediaIds !== undefined && mediaIds.length > 0 && { mediaIds }),
     };
   }
 

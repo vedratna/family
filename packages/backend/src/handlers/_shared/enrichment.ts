@@ -1,5 +1,6 @@
 import type { Post, Comment, Reaction, FamilyEvent, EventRSVP } from "@family-app/shared";
 
+import type { IMediaRepository, IStorageService } from "../../repositories/interfaces/media-repo";
 import type { IPersonRepository } from "../../repositories/interfaces/person-repo";
 import type { ICommentRepository } from "../../repositories/interfaces/post-repo";
 import type { IReactionRepository } from "../../repositories/interfaces/post-repo";
@@ -29,6 +30,7 @@ export interface EnrichedPost extends Post {
   authorName: string;
   reactionCount: number;
   commentCount: number;
+  mediaUrls: string[];
 }
 
 export interface EnrichedComment extends Comment {
@@ -47,24 +49,54 @@ export interface EnrichedRSVP extends EventRSVP {
   personName: string;
 }
 
+export async function resolveMediaUrls(
+  mediaIds: string[] | undefined,
+  mediaRepo: IMediaRepository,
+  storageService: IStorageService,
+): Promise<string[]> {
+  if (!mediaIds || mediaIds.length === 0) return [];
+  const urls = await Promise.all(
+    mediaIds.map(async (id) => {
+      const media = await mediaRepo.getById(id);
+      if (!media) return null;
+      return await storageService.generateDownloadUrl(media.s3Key, 3600);
+    }),
+  );
+  return urls.filter((u): u is string => u !== null);
+}
+
+export async function resolveProfilePhotoUrl(
+  profilePhotoKey: string | undefined,
+  storageService: IStorageService,
+): Promise<string | null> {
+  if (profilePhotoKey === undefined || profilePhotoKey === "") return null;
+  return await storageService.generateDownloadUrl(profilePhotoKey, 3600);
+}
+
 export async function enrichPosts(
   posts: Post[],
   resolver: PersonNameResolver,
   reactionRepo: IReactionRepository,
   commentRepo: ICommentRepository,
+  mediaRepo?: IMediaRepository,
+  storageService?: IStorageService,
 ): Promise<EnrichedPost[]> {
   return Promise.all(
     posts.map(async (post) => {
-      const [authorName, reactions, comments] = await Promise.all([
+      const [authorName, reactions, comments, mediaUrls] = await Promise.all([
         resolver.getName(post.familyId, post.authorPersonId),
         reactionRepo.getByPostId(post.id),
         commentRepo.getByPostId(post.id, 1000),
+        mediaRepo && storageService
+          ? resolveMediaUrls(post.mediaIds, mediaRepo, storageService)
+          : Promise.resolve([]),
       ]);
       return {
         ...post,
         authorName,
         reactionCount: reactions.length,
         commentCount: comments.items.length,
+        mediaUrls,
       };
     }),
   );
@@ -75,17 +107,23 @@ export async function enrichSinglePost(
   resolver: PersonNameResolver,
   reactionRepo: IReactionRepository,
   commentRepo: ICommentRepository,
+  mediaRepo?: IMediaRepository,
+  storageService?: IStorageService,
 ): Promise<EnrichedPost> {
-  const [authorName, reactions, comments] = await Promise.all([
+  const [authorName, reactions, comments, mediaUrls] = await Promise.all([
     resolver.getName(post.familyId, post.authorPersonId),
     reactionRepo.getByPostId(post.id),
     commentRepo.getByPostId(post.id, 1000),
+    mediaRepo && storageService
+      ? resolveMediaUrls(post.mediaIds, mediaRepo, storageService)
+      : Promise.resolve([]),
   ]);
   return {
     ...post,
     authorName,
     reactionCount: reactions.length,
     commentCount: comments.items.length,
+    mediaUrls,
   };
 }
 

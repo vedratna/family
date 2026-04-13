@@ -3,10 +3,12 @@ import type { AppSyncResolverEvent } from "aws-lambda";
 
 import { DomainError } from "../../domain/errors";
 import { DynamoCommentRepository } from "../../repositories/dynamodb/comment-repo";
+import { DynamoMediaRepository } from "../../repositories/dynamodb/media-repo";
 import { DynamoMembershipRepository } from "../../repositories/dynamodb/membership-repo";
 import { DynamoPersonRepository } from "../../repositories/dynamodb/person-repo";
 import { DynamoPostRepository } from "../../repositories/dynamodb/post-repo";
 import { DynamoReactionRepository } from "../../repositories/dynamodb/reaction-repo";
+import { S3StorageService } from "../../repositories/dynamodb/s3-storage-service";
 import { DynamoUserRepository } from "../../repositories/dynamodb/user-repo";
 import {
   AddComment,
@@ -32,6 +34,8 @@ const membershipRepo = new DynamoMembershipRepository();
 const postRepo = new DynamoPostRepository();
 const commentRepo = new DynamoCommentRepository();
 const reactionRepo = new DynamoReactionRepository();
+const mediaRepo = new DynamoMediaRepository();
+const storageService = new S3StorageService();
 
 const getFamilyFeed = new GetFamilyFeed(postRepo);
 const getPostComments = new GetPostComments(commentRepo);
@@ -115,7 +119,14 @@ async function handleFamilyFeed(
     input.cursor = args.cursor;
   }
   const result = await getFamilyFeed.execute(input);
-  const enrichedItems = await enrichPosts(result.items, resolver, reactionRepo, commentRepo);
+  const enrichedItems = await enrichPosts(
+    result.items,
+    resolver,
+    reactionRepo,
+    commentRepo,
+    mediaRepo,
+    storageService,
+  );
   return { items: enrichedItems, cursor: result.cursor };
 }
 
@@ -129,7 +140,7 @@ async function handlePostDetail(
   if (post === undefined) {
     return null;
   }
-  return enrichSinglePost(post, resolver, reactionRepo, commentRepo);
+  return enrichSinglePost(post, resolver, reactionRepo, commentRepo, mediaRepo, storageService);
 }
 
 async function handlePostComments(
@@ -175,13 +186,15 @@ async function handleCreatePost(
   const args = event.arguments;
   const familyId = args.familyId as string;
   const { personId, role } = await resolveRequester(event, familyId);
+  const mediaIds = Array.isArray(args.mediaIds) ? (args.mediaIds as string[]) : undefined;
   const post: Post = await createPost.execute({
     familyId,
     authorPersonId: personId,
     textContent: args.textContent as string,
     requesterRole: role,
+    ...(mediaIds !== undefined && { mediaIds }),
   });
-  return enrichSinglePost(post, resolver, reactionRepo, commentRepo);
+  return enrichSinglePost(post, resolver, reactionRepo, commentRepo, mediaRepo, storageService);
 }
 
 async function handleDeletePost(event: AppSyncResolverEvent<HandlerArgs>): Promise<boolean> {

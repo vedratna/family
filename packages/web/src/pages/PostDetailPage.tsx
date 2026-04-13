@@ -3,8 +3,10 @@ import { useParams, Link, useNavigate } from "react-router";
 import { useQuery, useClient } from "urql";
 
 import { ConfirmModal } from "../components/ConfirmModal";
+import { Lightbox } from "../components/Lightbox";
 import { LoadMoreButton } from "../components/LoadMoreButton";
 import { Loading } from "../components/Loading";
+import { MediaThumbnail } from "../components/MediaThumbnail";
 import { QueryError } from "../components/QueryError";
 import { formatErrorMessage } from "../lib/error-utils";
 import {
@@ -27,6 +29,7 @@ interface ApiPost {
   textContent: string;
   isSystemPost: boolean;
   createdAt: string;
+  mediaUrls?: string[];
 }
 
 interface ApiComment {
@@ -64,6 +67,7 @@ export function PostDetailPage() {
   const [accumulatedComments, setAccumulatedComments] = useState<ApiComment[]>([]);
   const [commentCursor, setCommentCursor] = useState<string | null>(null);
   const [loadingMoreComments, setLoadingMoreComments] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const [postResult, reexecutePost] = useQuery({
     query: POST_DETAIL_QUERY,
@@ -309,6 +313,20 @@ export function PostDetailPage() {
         <p className="text-sm text-[var(--color-text-primary)] leading-relaxed mb-3">
           {post.textContent}
         </p>
+        {isApiMode() && ((post as ApiPost).mediaUrls ?? []).length > 0 && (
+          <div className="flex gap-2 mb-3 overflow-x-auto">
+            {((post as ApiPost).mediaUrls ?? []).map((url) => (
+              <MediaThumbnail
+                key={url}
+                url={url}
+                isVideo={/\.(mp4|mov|webm|avi)(\?|$)/i.test(url) || url.includes("video")}
+                onClick={() => {
+                  setLightboxUrl(url);
+                }}
+              />
+            ))}
+          </div>
+        )}
         <div className="flex items-center gap-4 text-xs text-[var(--color-text-secondary)]">
           <button
             type="button"
@@ -405,6 +423,16 @@ export function PostDetailPage() {
           {commentError !== null && <p className="text-sm text-red-600 mt-2">{commentError}</p>}
         </form>
       </div>
+      <Lightbox
+        url={lightboxUrl}
+        isVideo={
+          lightboxUrl !== null &&
+          (/\.(mp4|mov|webm|avi)(\?|$)/i.test(lightboxUrl) || lightboxUrl.includes("video"))
+        }
+        onClose={() => {
+          setLightboxUrl(null);
+        }}
+      />
     </div>
   );
 }
