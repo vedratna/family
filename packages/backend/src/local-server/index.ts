@@ -530,7 +530,7 @@ const resolvers = {
     // Feed
     createPost: async (
       _: unknown,
-      args: { input: { familyId: string; textContent: string } },
+      args: { input: { familyId: string; textContent: string; mediaIds?: string[] } },
       ctx: Context,
     ) => {
       const { personId, role } = await resolveRequester(ctx, args.input.familyId);
@@ -539,6 +539,7 @@ const resolvers = {
         authorPersonId: personId,
         textContent: args.input.textContent,
         requesterRole: role,
+        ...(args.input.mediaIds !== undefined && { mediaIds: args.input.mediaIds }),
       });
     },
 
@@ -887,6 +888,17 @@ const resolvers = {
     ) => {
       return getPersonName(ctx, post.familyId, post.authorPersonId);
     },
+    mediaUrls: async (post: { mediaIds?: string[] }) => {
+      if (!post.mediaIds || post.mediaIds.length === 0) return [];
+      const urls = await Promise.all(
+        post.mediaIds.map(async (id: string) => {
+          const media = await mediaRepo.getById(id);
+          if (!media) return null;
+          return await storageService.generateDownloadUrl(media.s3Key, 3600);
+        }),
+      );
+      return urls.filter((u): u is string => u !== null);
+    },
     reactionCount: async (post: { id: string }) => {
       const reactions = await reactionRepo.getByPostId(post.id);
       return reactions.length;
@@ -940,6 +952,20 @@ const resolvers = {
       const familyId = getFamilyIdForEvent(ctx, rsvp.eventId);
       if (familyId === undefined) return "Unknown";
       return getPersonName(ctx, familyId, rsvp.personId);
+    },
+  },
+
+  User: {
+    profilePhotoUrl: async (user: { profilePhotoKey?: string }) => {
+      if (user.profilePhotoKey === undefined || user.profilePhotoKey === "") return null;
+      return await storageService.generateDownloadUrl(user.profilePhotoKey, 3600);
+    },
+  },
+
+  Person: {
+    profilePhotoUrl: async (person: { profilePhotoKey?: string }) => {
+      if (person.profilePhotoKey === undefined || person.profilePhotoKey === "") return null;
+      return await storageService.generateDownloadUrl(person.profilePhotoKey, 3600);
     },
   },
 };

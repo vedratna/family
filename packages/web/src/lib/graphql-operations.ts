@@ -51,6 +51,7 @@ export const FAMILY_FEED_QUERY = `
     familyFeed(familyId: $familyId, limit: $limit, cursor: $cursor) {
       items {
         id familyId authorPersonId authorName textContent isSystemPost createdAt
+        mediaUrls
         reactionCount commentCount
       }
       cursor
@@ -62,6 +63,7 @@ export const POST_DETAIL_QUERY = `
   query PostDetail($postId: ID!, $familyId: ID!) {
     postDetail(postId: $postId, familyId: $familyId) {
       id familyId authorPersonId authorName textContent isSystemPost createdAt
+      mediaUrls
       reactionCount commentCount
     }
   }
@@ -210,7 +212,7 @@ export const COMPLETE_CHORE_MUTATION = `
 export const FAMILY_MEMBERS_QUERY = `
   query FamilyMembers($familyId: ID!) {
     familyMembers(familyId: $familyId) {
-      person { id familyId userId name profilePhotoKey createdAt }
+      person { id familyId userId name profilePhotoKey profilePhotoUrl createdAt }
       role
       joinedAt
       hasAppAccount
@@ -318,6 +320,16 @@ export const USER_BY_PHONE_QUERY = `
   query UserByPhone($phone: String!) {
     userByPhone(phone: $phone) {
       id phone displayName createdAt
+    }
+  }
+`;
+
+// ─── Profile ───
+
+export const UPDATE_PROFILE_MUTATION = `
+  mutation UpdateProfile($displayName: String!, $profilePhotoKey: String, $dateOfBirth: String) {
+    updateProfile(displayName: $displayName, profilePhotoKey: $profilePhotoKey, dateOfBirth: $dateOfBirth) {
+      id phone displayName profilePhotoKey profilePhotoUrl dateOfBirth createdAt
     }
   }
 `;

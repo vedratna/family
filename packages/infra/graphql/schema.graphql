@@ -92,6 +92,7 @@ type User {
   phone: String!
   displayName: String!
   profilePhotoKey: String
+  profilePhotoUrl: String
   dateOfBirth: String
   createdAt: String!
 }
@@ -112,6 +113,7 @@ type Person {
   userId: String
   name: String!
   profilePhotoKey: String
+  profilePhotoUrl: String
   createdAt: String!
 }
 
@@ -170,6 +172,7 @@ type Post {
   textContent: String!
   isSystemPost: Boolean!
   createdAt: String!
+  mediaUrls: [String!]!
   reactionCount: Int!
   commentCount: Int!
 }
@@ -314,6 +317,7 @@ input InviteMemberInput {
 input CreatePostInput {
   familyId: ID!
   textContent: String!
+  mediaIds: [ID!]
 }
 
 input AddCommentInput {

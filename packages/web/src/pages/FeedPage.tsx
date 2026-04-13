@@ -2,14 +2,18 @@ import { useState, useMemo, useEffect, useCallback, type SyntheticEvent } from "
 import { Link } from "react-router";
 import { useQuery, useClient } from "urql";
 
+import { FilePicker } from "../components/FilePicker";
+import { Lightbox } from "../components/Lightbox";
 import { LoadMoreButton } from "../components/LoadMoreButton";
 import { Loading } from "../components/Loading";
+import { MediaThumbnail } from "../components/MediaThumbnail";
 import { QueryError } from "../components/QueryError";
 import { formatErrorMessage } from "../lib/error-utils";
 import { FAMILY_FEED_QUERY, FAMILY_EVENTS_QUERY } from "../lib/graphql-operations";
-import { useCreatePost } from "../lib/hooks";
+import { useCreatePost, useGenerateUploadUrl, useConfirmMediaUpload } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import { toFeedItems, type FeedItem, computeTimeAgo } from "../lib/transforms";
+import { uploadMedia, type UploadedMedia } from "../lib/upload";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
 
@@ -23,7 +27,18 @@ const EVENT_TYPE_ICONS: Record<string, string> = {
   custom: "\uD83D\uDCC5",
 };
 
-function PostCard({ item }: { item: FeedItem & { type: "post" } }) {
+function isVideoUrl(url: string): boolean {
+  return /\.(mp4|mov|webm|avi)(\?|$)/i.test(url) || url.includes("video");
+}
+
+function PostCard({
+  item,
+  onMediaClick,
+}: {
+  item: FeedItem & { type: "post" };
+  onMediaClick?: (url: string) => void;
+}) {
+  const mediaUrls = "mediaUrls" in item ? (item.mediaUrls as string[]) : [];
   return (
     <Link
       to={`/feed/${item.id}`}
@@ -41,6 +56,20 @@ function PostCard({ item }: { item: FeedItem & { type: "post" } }) {
       <p className="text-sm text-[var(--color-text-primary)] mb-3 leading-relaxed">
         {item.textContent}
       </p>
+      {mediaUrls.length > 0 && (
+        <div className="flex gap-2 mb-3 overflow-x-auto">
+          {mediaUrls.map((url) => (
+            <MediaThumbnail
+              key={url}
+              url={url}
+              isVideo={isVideoUrl(url)}
+              onClick={() => {
+                onMediaClick?.(url);
+              }}
+            />
+          ))}
+        </div>
+      )}
       <div className="flex gap-4 text-xs text-[var(--color-text-secondary)]">
         <span>
           {"\u2764\uFE0F"} {item.reactionCount}
@@ -90,6 +119,7 @@ interface ApiFeedPost {
   textContent: string;
   isSystemPost: boolean;
   createdAt: string;
+  mediaUrls: string[];
   reactionCount: number;
   commentCount: number;
 }
@@ -98,11 +128,16 @@ export function FeedPage() {
   const mockData = useMockData();
   const { activeFamilyId } = useFamily();
   const { createPost, loading: postLoading } = useCreatePost();
+  const { generateUploadUrl } = useGenerateUploadUrl();
+  const { confirmMediaUpload } = useConfirmMediaUpload();
   const urqlClient = useClient();
 
   const [showForm, setShowForm] = useState(false);
   const [newPostText, setNewPostText] = useState("");
   const [postError, setPostError] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   // Pagination state (API mode only)
   const [accumulatedPosts, setAccumulatedPosts] = useState<ApiFeedPost[]>([]);
@@ -181,6 +216,7 @@ export function FeedPage() {
         reactionCount: post.reactionCount,
         commentCount: post.commentCount,
         createdAt: post.createdAt,
+        mediaUrls: post.mediaUrls,
       }));
 
       const evRaw = eventsResult.data as
@@ -230,23 +266,55 @@ export function FeedPage() {
     setPostError(null);
 
     if (isApiMode()) {
-      void createPost({
-        input: { familyId: activeFamilyId, textContent: newPostText.trim() },
-      }).then((result) => {
+      void (async () => {
+        let mediaIds: string[] = [];
+        if (selectedFiles.length > 0) {
+          try {
+            const uploaded: UploadedMedia[] = [];
+            for (let i = 0; i < selectedFiles.length; i++) {
+              setUploadProgress(`Uploading ${String(i + 1)}/${String(selectedFiles.length)}...`);
+              const result = await uploadMedia(
+                selectedFiles[i] as File,
+                activeFamilyId,
+                generateUploadUrl,
+                confirmMediaUpload,
+              );
+              uploaded.push(result);
+            }
+            mediaIds = uploaded.map((m) => m.id);
+          } catch (err) {
+            setPostError(err instanceof Error ? err.message : "Upload failed");
+            setUploadProgress(null);
+            return;
+          }
+        }
+
+        setUploadProgress("Posting...");
+        const result = await createPost({
+          input: {
+            familyId: activeFamilyId,
+            textContent: newPostText.trim(),
+            ...(mediaIds.length > 0 && { mediaIds }),
+          },
+        });
+        setUploadProgress(null);
         if (result.error) {
           setPostError(formatErrorMessage(result.error));
           return;
         }
         reexecuteFeed({ requestPolicy: "network-only" });
         setNewPostText("");
+        setSelectedFiles([]);
         setShowForm(false);
-      });
+      })();
     } else {
       console.log("[mock] createPost:", {
         familyId: activeFamilyId,
         textContent: newPostText.trim(),
+        fileCount: selectedFiles.length,
       });
       setNewPostText("");
+      setSelectedFiles([]);
       setShowForm(false);
     }
   }
@@ -313,14 +381,30 @@ export function FeedPage() {
             className="w-full p-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] resize-none"
             rows={3}
           />
+          <div className="flex items-center gap-2 mt-2">
+            <FilePicker
+              onSelect={(files) => {
+                setSelectedFiles(files);
+              }}
+              disabled={postLoading || uploadProgress !== null}
+            />
+            {selectedFiles.length > 0 && (
+              <span className="text-xs text-[var(--color-text-secondary)]">
+                {String(selectedFiles.length)} file{selectedFiles.length > 1 ? "s" : ""} selected
+              </span>
+            )}
+          </div>
           {postError !== null && <p className="mt-2 text-sm text-red-600">{postError}</p>}
+          {uploadProgress !== null && (
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{uploadProgress}</p>
+          )}
           <div className="flex justify-end mt-2">
             <button
               type="submit"
-              disabled={postLoading || !newPostText.trim()}
+              disabled={postLoading || !newPostText.trim() || uploadProgress !== null}
               className="px-4 py-1.5 text-sm font-medium rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-accent-on)] hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {postLoading ? "Posting..." : "Post"}
+              {uploadProgress !== null ? uploadProgress : postLoading ? "Posting..." : "Post"}
             </button>
           </div>
         </form>
@@ -329,7 +413,13 @@ export function FeedPage() {
       <div className="flex flex-col gap-3">
         {feedItems.map((item) =>
           item.type === "post" ? (
-            <PostCard key={item.id} item={item} />
+            <PostCard
+              key={item.id}
+              item={item}
+              onMediaClick={(url) => {
+                setLightboxUrl(url);
+              }}
+            />
           ) : (
             <EventCard key={item.id} item={item} />
           ),
@@ -338,6 +428,13 @@ export function FeedPage() {
           <p className="text-sm text-[var(--color-text-tertiary)]">No posts yet — create one!</p>
         )}
       </div>
+      <Lightbox
+        url={lightboxUrl}
+        isVideo={lightboxUrl !== null && isVideoUrl(lightboxUrl)}
+        onClose={() => {
+          setLightboxUrl(null);
+        }}
+      />
       {isApiMode() && (
         <LoadMoreButton visible={nextCursor !== null} onClick={loadMore} loading={loadingMore} />
       )}

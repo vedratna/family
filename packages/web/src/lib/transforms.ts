@@ -243,6 +243,7 @@ export interface MemberItem {
   name: string;
   role: Role;
   hasAppAccount: boolean;
+  profilePhotoUrl?: string | undefined;
 }
 
 export function toMemberItems(

@@ -1,15 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // --- Mock repositories ---
-const { mockGetByCognitoSub, mockRegisterExecute, mockUpdateProfileExecute } = vi.hoisted(() => ({
+const {
+  mockGetByCognitoSub,
+  mockRegisterExecute,
+  mockUpdateProfileExecute,
+  mockGenerateDownloadUrl,
+} = vi.hoisted(() => ({
   mockGetByCognitoSub: vi.fn(),
   mockRegisterExecute: vi.fn(),
   mockUpdateProfileExecute: vi.fn(),
+  mockGenerateDownloadUrl: vi.fn(),
 }));
 
 vi.mock("../../../repositories/dynamodb/user-repo", () => ({
   DynamoUserRepository: vi.fn().mockImplementation(() => ({
     getByCognitoSub: mockGetByCognitoSub,
+  })),
+}));
+
+vi.mock("../../../repositories/dynamodb/s3-storage-service", () => ({
+  S3StorageService: vi.fn().mockImplementation(() => ({
+    generateDownloadUrl: mockGenerateDownloadUrl,
   })),
 }));
 
@@ -59,9 +71,10 @@ describe("auth handler", () => {
 
   // --- register ---
   describe("register", () => {
-    it("calls RegisterWithPhone and returns user", async () => {
+    it("calls RegisterWithPhone and returns user with profilePhotoUrl", async () => {
       const user = { id: "u1", phone: "+1234567890", displayName: "Test" };
       mockRegisterExecute.mockResolvedValue({ user });
+      mockGenerateDownloadUrl.mockResolvedValue("https://s3.example.com/photo.jpg");
 
       const result = await handler(
         createEvent("register", {
@@ -76,7 +89,7 @@ describe("auth handler", () => {
         cognitoSub: "cog-sub-1",
         displayName: "Test",
       });
-      expect(result).toEqual(user);
+      expect(result).toEqual({ ...user, profilePhotoUrl: null });
     });
   });
 
@@ -84,8 +97,9 @@ describe("auth handler", () => {
   describe("updateProfile", () => {
     it("resolves user and calls UpdateUserProfile", async () => {
       mockGetByCognitoSub.mockResolvedValue({ id: "user-123" });
-      const updatedUser = { id: "user-123", displayName: "New Name" };
+      const updatedUser = { id: "user-123", displayName: "New Name", profilePhotoKey: "key.jpg" };
       mockUpdateProfileExecute.mockResolvedValue({ user: updatedUser });
+      mockGenerateDownloadUrl.mockResolvedValue("https://s3.example.com/key.jpg");
 
       const profile = { displayName: "New Name", profilePhotoKey: "key.jpg" };
       const result = await handler(createEvent("updateProfile", { profile }) as any);
@@ -95,7 +109,7 @@ describe("auth handler", () => {
         userId: "user-123",
         profile,
       });
-      expect(result).toEqual(updatedUser);
+      expect(result).toEqual({ ...updatedUser, profilePhotoUrl: "https://s3.example.com/key.jpg" });
     });
 
     it("throws when user not found", async () => {

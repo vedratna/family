@@ -39,6 +39,7 @@ import {
   FAMILY_TREE_QUERY,
   NOTIFICATION_PREFS_QUERY,
   UPDATE_NOTIFICATION_PREF_MUTATION,
+  UPDATE_PROFILE_MUTATION,
   GENERATE_UPLOAD_URL_MUTATION,
   CONFIRM_MEDIA_UPLOAD_MUTATION,
 } from "./graphql-operations";
@@ -393,6 +394,13 @@ export function useNotificationPrefs(familyId: string) {
 export function useUpdateNotificationPref() {
   const [result, executeMutation] = useMutation(UPDATE_NOTIFICATION_PREF_MUTATION);
   return { updateNotificationPref: executeMutation, loading: result.fetching, error: result.error };
+}
+
+// ─── Profile ───
+
+export function useUpdateProfile() {
+  const [result, executeMutation] = useMutation(UPDATE_PROFILE_MUTATION);
+  return { updateProfile: executeMutation, loading: result.fetching, error: result.error };
 }
 
 // ─── Media ───

@@ -5,6 +5,7 @@ export interface Post {
   textContent: string;
   isSystemPost: boolean;
   createdAt: string;
+  mediaIds?: string[];
 }
 
 export interface PostMedia {

@@ -53,7 +53,7 @@ export function MembersPage() {
       const raw = membersResult.data as
         | {
             familyMembers: {
-              person: Person;
+              person: Person & { profilePhotoUrl?: string };
               role: string;
               joinedAt: string;
               hasAppAccount: boolean;
@@ -65,6 +65,7 @@ export function MembersPage() {
         name: m.person.name,
         role: m.role as Role,
         hasAppAccount: m.hasAppAccount,
+        profilePhotoUrl: m.person.profilePhotoUrl,
       }));
     }
     return toMemberItems(mockData.persons, mockData.memberships, activeFamilyId);
@@ -267,9 +268,17 @@ export function MembersPage() {
               className="flex items-center justify-between p-3 bg-[var(--color-bg-card)] rounded-lg border border-[var(--color-border-secondary)]"
             >
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-[var(--color-accent-light)] flex items-center justify-center text-sm font-semibold text-[var(--color-accent-primary)]">
-                  {member.name.charAt(0)}
-                </div>
+                {member.profilePhotoUrl !== undefined && member.profilePhotoUrl !== "" ? (
+                  <img
+                    src={member.profilePhotoUrl}
+                    alt={member.name}
+                    className="w-9 h-9 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-[var(--color-accent-light)] flex items-center justify-center text-sm font-semibold text-[var(--color-accent-primary)]">
+                    {member.name.charAt(0)}
+                  </div>
+                )}
                 <div>
                   <p className="text-sm font-medium text-[var(--color-text-primary)]">
                     {member.name}

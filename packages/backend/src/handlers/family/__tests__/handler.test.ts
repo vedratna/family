@@ -61,6 +61,12 @@ vi.mock("../../../repositories/dynamodb/invitation-repo", () => ({
   DynamoInvitationRepository: vi.fn().mockImplementation(() => ({})),
 }));
 
+vi.mock("../../../repositories/dynamodb/s3-storage-service", () => ({
+  S3StorageService: vi.fn().mockImplementation(() => ({
+    generateDownloadUrl: vi.fn().mockResolvedValue(null),
+  })),
+}));
+
 vi.mock("../../../use-cases/family", () => ({
   GetUserFamilies: vi.fn().mockImplementation(() => ({
     execute: mockGetUserFamiliesExecute,
@@ -179,7 +185,10 @@ describe("family handler", () => {
 
       expect(mockGetByFamilyId_membership).toHaveBeenCalledWith("f1");
       expect(mockGetByFamilyId_person).toHaveBeenCalledWith("f1");
-      expect(result).toEqual({ memberships, persons });
+      expect(result).toEqual({
+        memberships,
+        persons: [{ id: "p1", name: "Alice", profilePhotoUrl: null }],
+      });
     });
   });
 

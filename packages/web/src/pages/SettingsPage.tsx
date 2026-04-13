@@ -3,11 +3,19 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useQuery } from "urql";
 
+import { FilePicker } from "../components/FilePicker";
 import { Toggle } from "../components/Toggle";
 import { formatErrorMessage } from "../lib/error-utils";
 import { NOTIFICATION_PREFS_QUERY } from "../lib/graphql-operations";
-import { useUpdateFamilyTheme, useUpdateNotificationPref } from "../lib/hooks";
+import {
+  useUpdateFamilyTheme,
+  useUpdateNotificationPref,
+  useUpdateProfile,
+  useGenerateUploadUrl,
+  useConfirmMediaUpload,
+} from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
+import { uploadMedia } from "../lib/upload";
 import { useAuth } from "../providers/AuthProvider";
 import { useFamily } from "../providers/FamilyProvider";
 
@@ -60,13 +68,57 @@ interface NotifPref {
 
 export function SettingsPage() {
   const { families, activeFamilyId, activeThemeName, switchFamily, refetchFamilies } = useFamily();
-  const { logout } = useAuth();
+  const { logout, currentUser } = useAuth();
   const navigate = useNavigate();
   const { updateFamilyTheme } = useUpdateFamilyTheme();
   const { updateNotificationPref } = useUpdateNotificationPref();
+  const { updateProfile } = useUpdateProfile();
+  const { generateUploadUrl } = useGenerateUploadUrl();
+  const { confirmMediaUpload } = useConfirmMediaUpload();
   const [themeError, setThemeError] = useState<string | null>(null);
   const [notifError, setNotifError] = useState<string | null>(null);
   const [pendingCategory, setPendingCategory] = useState<string | null>(null);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  async function handleProfilePhotoSelect(files: File[]) {
+    const file = files[0];
+    if (!file) return;
+    setPhotoError(null);
+    setPhotoUploading(true);
+    try {
+      if (!isApiMode()) {
+        console.log("[mock] uploadProfilePhoto:", file.name);
+        setProfilePhotoUrl(URL.createObjectURL(file));
+        setPhotoUploading(false);
+        return;
+      }
+      const uploaded = await uploadMedia(
+        file,
+        activeFamilyId,
+        generateUploadUrl,
+        confirmMediaUpload,
+      );
+      // Update profile with the new s3Key
+      const result = await updateProfile({
+        displayName: currentUser?.displayName ?? "",
+        profilePhotoKey: uploaded.s3Key,
+      });
+      if (result.error) {
+        setPhotoError(formatErrorMessage(result.error));
+      } else {
+        const data = result.data as
+          | { updateProfile: { profilePhotoUrl: string | null } }
+          | undefined;
+        setProfilePhotoUrl(data?.updateProfile.profilePhotoUrl ?? null);
+      }
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setPhotoUploading(false);
+    }
+  }
 
   const [prefsResult, reexecutePrefs] = useQuery({
     query: NOTIFICATION_PREFS_QUERY,
@@ -126,6 +178,39 @@ export function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto p-4">
       <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-6">Settings</h1>
+
+      {/* Profile Photo */}
+      <div className="mb-6 p-4 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border-secondary)]">
+        <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
+          Profile Photo
+        </h2>
+        <div className="flex items-center gap-4">
+          {profilePhotoUrl !== null && profilePhotoUrl !== "" ? (
+            <img
+              src={profilePhotoUrl}
+              alt="Profile"
+              className="w-16 h-16 rounded-full object-cover border border-[var(--color-border-secondary)]"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-[var(--color-accent-light)] flex items-center justify-center text-xl font-semibold text-[var(--color-accent-primary)]">
+              {currentUser?.displayName.charAt(0) ?? "?"}
+            </div>
+          )}
+          <FilePicker
+            onSelect={(files) => {
+              void handleProfilePhotoSelect(files);
+            }}
+            accept="image/*"
+            multiple={false}
+            maxFiles={1}
+            disabled={photoUploading}
+          />
+        </div>
+        {photoUploading && (
+          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">Uploading...</p>
+        )}
+        {photoError !== null && <p className="mt-2 text-sm text-red-600">{photoError}</p>}
+      </div>
 
       {/* Logout */}
       <button
