@@ -6,5 +6,5 @@
  * in-memory mock data that ships with MockDataProvider.
  */
 export function isApiMode(): boolean {
-  return (import.meta.env.VITE_DATA_MODE as string | undefined) === "api";
+  return import.meta.env.VITE_DATA_MODE === "api";
 }
