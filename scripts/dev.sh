@@ -13,7 +13,7 @@ docker compose up dynamodb-local -d
 
 echo "Waiting for DynamoDB Local to be ready..."
 for i in {1..30}; do
-  if curl -sf http://localhost:8000 > /dev/null 2>&1; then
+  if nc -z localhost 8000 2>/dev/null; then
     echo "DynamoDB Local is ready."
     break
   fi
