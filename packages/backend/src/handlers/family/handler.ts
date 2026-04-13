@@ -5,6 +5,7 @@ import { DomainError } from "../../domain/errors";
 import { DynamoFamilyRepository } from "../../repositories/dynamodb/family-repo";
 import { DynamoInvitationRepository } from "../../repositories/dynamodb/invitation-repo";
 import { DynamoMembershipRepository } from "../../repositories/dynamodb/membership-repo";
+import { DynamoNotificationPrefRepository } from "../../repositories/dynamodb/notification-pref-repo";
 import { DynamoPersonRepository } from "../../repositories/dynamodb/person-repo";
 import { DynamoUserRepository } from "../../repositories/dynamodb/user-repo";
 import {
@@ -24,11 +25,17 @@ const familyRepo = new DynamoFamilyRepository();
 const personRepo = new DynamoPersonRepository();
 const membershipRepo = new DynamoMembershipRepository();
 const invitationRepo = new DynamoInvitationRepository();
+const notifPrefRepo = new DynamoNotificationPrefRepository();
 
 const getUserFamilies = new GetUserFamilies(membershipRepo, familyRepo);
-const createFamily = new CreateFamily(familyRepo, personRepo, membershipRepo);
+const createFamily = new CreateFamily(familyRepo, personRepo, membershipRepo, notifPrefRepo);
 const inviteMember = new InviteMember(familyRepo, membershipRepo, invitationRepo);
-const acceptInvitation = new AcceptInvitation(invitationRepo, personRepo, membershipRepo);
+const acceptInvitation = new AcceptInvitation(
+  invitationRepo,
+  personRepo,
+  membershipRepo,
+  notifPrefRepo,
+);
 const addNonAppPerson = new AddNonAppPerson(personRepo);
 const updateMemberRole = new UpdateMemberRole(membershipRepo);
 const transferOwnership = new TransferOwnership(membershipRepo);

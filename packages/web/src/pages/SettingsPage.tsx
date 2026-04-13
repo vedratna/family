@@ -1,9 +1,12 @@
 import type { ThemeName } from "@family-app/shared";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { useQuery } from "urql";
 
+import { Toggle } from "../components/Toggle";
 import { formatErrorMessage } from "../lib/error-utils";
-import { useUpdateFamilyTheme } from "../lib/hooks";
+import { NOTIFICATION_PREFS_QUERY } from "../lib/graphql-operations";
+import { useUpdateFamilyTheme, useUpdateNotificationPref } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import { useAuth } from "../providers/AuthProvider";
 import { useFamily } from "../providers/FamilyProvider";
@@ -19,12 +22,86 @@ const THEME_OPTIONS: { name: ThemeName; color: string }[] = [
   { name: "slate", color: "#64748B" },
 ];
 
+interface NotifCategory {
+  key: string;
+  label: string;
+  description: string;
+}
+
+const NOTIFICATION_CATEGORIES: NotifCategory[] = [
+  {
+    key: "events-reminders",
+    label: "Events & Reminders",
+    description: "Birthday, anniversary, and event reminders",
+  },
+  {
+    key: "social-feed",
+    label: "Social Feed",
+    description: "New posts in the family feed",
+  },
+  {
+    key: "social-comments-on-own",
+    label: "Comments on My Posts",
+    description: "When someone comments on a post you wrote",
+  },
+  {
+    key: "family-updates",
+    label: "Family Updates",
+    description: "New members, role changes, family settings",
+  },
+];
+
+interface NotifPref {
+  userId: string;
+  familyId: string;
+  category: string;
+  enabled: boolean;
+}
+
 export function SettingsPage() {
   const { families, activeFamilyId, activeThemeName, switchFamily, refetchFamilies } = useFamily();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { updateFamilyTheme } = useUpdateFamilyTheme();
+  const { updateNotificationPref } = useUpdateNotificationPref();
   const [themeError, setThemeError] = useState<string | null>(null);
+  const [notifError, setNotifError] = useState<string | null>(null);
+  const [pendingCategory, setPendingCategory] = useState<string | null>(null);
+
+  const [prefsResult, reexecutePrefs] = useQuery({
+    query: NOTIFICATION_PREFS_QUERY,
+    variables: { familyId: activeFamilyId },
+    pause: !isApiMode() || !activeFamilyId,
+  });
+
+  const prefMap = useMemo(() => {
+    const data = prefsResult.data as { notificationPreferences: NotifPref[] } | undefined;
+    const map = new Map<string, boolean>();
+    for (const p of data?.notificationPreferences ?? []) {
+      map.set(p.category, p.enabled);
+    }
+    return map;
+  }, [prefsResult.data]);
+
+  function handleNotifToggle(category: string, next: boolean) {
+    setNotifError(null);
+    setPendingCategory(category);
+    if (!isApiMode()) {
+      console.log("[mock] updateNotificationPref:", { category, enabled: next });
+      setPendingCategory(null);
+      return;
+    }
+    void updateNotificationPref({ familyId: activeFamilyId, category, enabled: next }).then(
+      (result) => {
+        setPendingCategory(null);
+        if (result.error) {
+          setNotifError(formatErrorMessage(result.error));
+          return;
+        }
+        reexecutePrefs({ requestPolicy: "network-only" });
+      },
+    );
+  }
 
   function handleLogout() {
     logout();
@@ -93,6 +170,41 @@ export function SettingsPage() {
         <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
           Current: {activeThemeName} (theme is set per family)
         </p>
+      </div>
+
+      {/* Notifications */}
+      <div className="mb-6">
+        <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
+          Notifications
+        </h2>
+        <div className="bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border-secondary)] divide-y divide-[var(--color-border-secondary)]">
+          {NOTIFICATION_CATEGORIES.map((cat) => {
+            // Default to enabled if no record yet
+            const enabled = prefMap.get(cat.key) ?? true;
+            const isPending = pendingCategory === cat.key;
+            return (
+              <div key={cat.key} className="flex items-start justify-between gap-4 p-4">
+                <div>
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                    {cat.label}
+                  </p>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                    {cat.description}
+                  </p>
+                </div>
+                <Toggle
+                  checked={enabled}
+                  disabled={isPending}
+                  label={cat.label}
+                  onChange={(next) => {
+                    handleNotifToggle(cat.key, next);
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+        {notifError !== null && <p className="text-sm text-red-600 mt-2">{notifError}</p>}
       </div>
 
       {/* Family switcher */}
