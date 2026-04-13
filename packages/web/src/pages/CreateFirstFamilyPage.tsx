@@ -3,6 +3,7 @@ import { useState, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router";
 
 import { useCreateFamily } from "../lib/hooks";
+import { useAuth } from "../providers/AuthProvider";
 import { useFamily } from "../providers/FamilyProvider";
 
 const THEME_OPTIONS: { name: ThemeName; color: string }[] = [
@@ -19,7 +20,13 @@ const THEME_OPTIONS: { name: ThemeName; color: string }[] = [
 export function CreateFirstFamilyPage() {
   const { createFamily, loading } = useCreateFamily();
   const { refetchFamilies } = useFamily();
+  const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+
+  function handleSignOut() {
+    logout();
+    void navigate("/login");
+  }
 
   const [familyName, setFamilyName] = useState("");
   const [themeName, setThemeName] = useState<ThemeName>("teal");
@@ -49,8 +56,19 @@ export function CreateFirstFamilyPage() {
             Welcome to Family App!
           </h1>
           <p className="text-sm text-[var(--color-text-secondary)]">
-            Create your first family to get started.
+            {currentUser !== null
+              ? `Signed in as ${currentUser.displayName}. Create your first family to get started.`
+              : "Create your first family to get started."}
           </p>
+          {currentUser !== null && (
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="mt-3 text-xs text-[var(--color-text-tertiary)] underline hover:text-[var(--color-text-secondary)]"
+            >
+              Not you? Sign out
+            </button>
+          )}
         </div>
 
         <form

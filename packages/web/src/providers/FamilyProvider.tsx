@@ -1,10 +1,19 @@
 import type { Family, ThemeName } from "@family-app/shared";
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  type ReactNode,
+} from "react";
 import { useQuery } from "urql";
 
 import { MY_FAMILIES_QUERY } from "../lib/graphql-operations";
 import { isApiMode } from "../lib/mode";
 
+import { useAuth } from "./AuthProvider";
 import { useMockData } from "./MockDataProvider";
 
 interface FamilyContextValue {
@@ -35,12 +44,21 @@ interface FamilyProviderProps {
 
 export function FamilyProvider({ children }: FamilyProviderProps) {
   const apiMode = isApiMode();
+  const { logout } = useAuth();
 
   // API mode: query myFamilies from the GraphQL backend
   const [apiResult, reexecuteQuery] = useQuery({
     query: MY_FAMILIES_QUERY,
     pause: !apiMode,
   });
+
+  // Auto-logout if the server says our user doesn't exist (stale localStorage)
+  useEffect(() => {
+    const err = apiResult.error;
+    if (err !== undefined && err.message.includes("USER_NOT_FOUND")) {
+      logout();
+    }
+  }, [apiResult.error, logout]);
 
   // Mock mode: read from MockDataProvider
   const mockData = useMockData();
