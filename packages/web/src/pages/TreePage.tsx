@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState, useLayoutEffect, useCallback } from "react";
 import { Link } from "react-router";
 import { useQuery } from "urql";
 
@@ -23,9 +23,21 @@ interface TreeData {
   generations: number;
 }
 
+interface Line {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  isSpouse?: boolean;
+}
+
 export function TreePage() {
   const mockData = useMockData();
   const { activeFamilyId } = useFamily();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const nodeRefs = useRef(new Map<string, HTMLElement>());
+  const [lines, setLines] = useState<Line[]>([]);
+  const [svgSize, setSvgSize] = useState({ width: 0, height: 0 });
 
   const [treeResult] = useQuery({
     query: FAMILY_TREE_QUERY,
@@ -68,6 +80,69 @@ export function TreePage() {
     return set;
   }, [familyTree]);
 
+  const setNodeRef = useCallback((personId: string, el: HTMLElement | null) => {
+    if (el) {
+      nodeRefs.current.set(personId, el);
+    } else {
+      nodeRefs.current.delete(personId);
+    }
+  }, []);
+
+  // Compute SVG lines after layout
+  useLayoutEffect(() => {
+    if (!familyTree || !containerRef.current) return;
+
+    // Small delay to ensure DOM is laid out
+    const frameId = requestAnimationFrame(() => {
+      const container = containerRef.current;
+      if (!container) return;
+      const containerRect = container.getBoundingClientRect();
+
+      const newLines: Line[] = [];
+
+      for (const node of familyTree.nodes) {
+        const parentEl = nodeRefs.current.get(node.personId);
+        if (!parentEl) continue;
+        const parentRect = parentEl.getBoundingClientRect();
+        const px = parentRect.left + parentRect.width / 2 - containerRect.left;
+        const py = parentRect.top + parentRect.height - containerRect.top;
+
+        // Parent-child lines
+        for (const childId of node.childIds) {
+          const childEl = nodeRefs.current.get(childId);
+          if (!childEl) continue;
+          const childRect = childEl.getBoundingClientRect();
+          const cx = childRect.left + childRect.width / 2 - containerRect.left;
+          const cy = childRect.top - containerRect.top;
+          newLines.push({ x1: px, y1: py, x2: cx, y2: cy });
+        }
+
+        // Spouse lines (only draw once per pair)
+        for (const spouseId of node.spouseIds) {
+          const pairKey = [node.personId, spouseId].sort().join("-");
+          const isFirst = node.personId === [node.personId, spouseId].sort()[0];
+          if (!isFirst) continue;
+          if (!spouseSet.has(pairKey)) continue;
+
+          const spouseEl = nodeRefs.current.get(spouseId);
+          if (!spouseEl) continue;
+          const spouseRect = spouseEl.getBoundingClientRect();
+          const sx = spouseRect.left + spouseRect.width / 2 - containerRect.left;
+          const sy = spouseRect.top + spouseRect.height / 2 - containerRect.top;
+          const pmy = parentRect.top + parentRect.height / 2 - containerRect.top;
+          newLines.push({ x1: px, y1: pmy, x2: sx, y2: sy, isSpouse: true });
+        }
+      }
+
+      setSvgSize({ width: containerRect.width, height: containerRect.height });
+      setLines(newLines);
+    });
+
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
+  }, [familyTree, generationGroups, spouseSet]);
+
   if (generationGroups === null) {
     return (
       <div className="max-w-3xl mx-auto p-4">
@@ -80,9 +155,50 @@ export function TreePage() {
     <div className="max-w-3xl mx-auto p-4">
       <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-6">Family Tree</h1>
 
-      <div className="flex flex-col gap-8">
+      <div ref={containerRef} className="relative flex flex-col gap-8">
+        {/* SVG overlay for connection lines */}
+        {lines.length > 0 && (
+          <svg
+            className="absolute inset-0 pointer-events-none"
+            width={svgSize.width}
+            height={svgSize.height}
+            style={{ zIndex: 0 }}
+          >
+            {lines.map((line, i) => {
+              if (line.isSpouse === true) {
+                // Simple horizontal line for spouses
+                return (
+                  <line
+                    key={i}
+                    x1={line.x1}
+                    y1={line.y1}
+                    x2={line.x2}
+                    y2={line.y2}
+                    stroke="var(--color-accent-primary)"
+                    strokeWidth="2"
+                    strokeDasharray="6 3"
+                    opacity="0.5"
+                  />
+                );
+              }
+              // Curved path for parent-child
+              const midY = (line.y1 + line.y2) / 2;
+              return (
+                <path
+                  key={i}
+                  d={`M ${String(line.x1)} ${String(line.y1)} C ${String(line.x1)} ${String(midY)}, ${String(line.x2)} ${String(midY)}, ${String(line.x2)} ${String(line.y2)}`}
+                  fill="none"
+                  stroke="var(--color-border-primary)"
+                  strokeWidth="2"
+                  opacity="0.5"
+                />
+              );
+            })}
+          </svg>
+        )}
+
         {generationGroups.map(([gen, nodes]) => (
-          <div key={gen}>
+          <div key={gen} style={{ position: "relative", zIndex: 1 }}>
             <h2 className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider mb-3">
               Generation {gen + 1}
             </h2>
@@ -109,6 +225,9 @@ export function TreePage() {
                   <div key={node.personId} className="flex items-center gap-2">
                     <Link
                       to={`/tree/${node.personId}`}
+                      ref={(el: HTMLAnchorElement | null) => {
+                        setNodeRef(node.personId, el);
+                      }}
                       className="flex flex-col items-center p-3 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border-secondary)] hover:border-[var(--color-accent-primary)] transition-colors min-w-[100px]"
                     >
                       <div className="w-12 h-12 rounded-full bg-[var(--color-accent-light)] flex items-center justify-center text-lg font-semibold text-[var(--color-accent-primary)] mb-2">
@@ -129,6 +248,9 @@ export function TreePage() {
                         <span className="text-[var(--color-text-tertiary)] text-lg">&mdash;</span>
                         <Link
                           to={`/tree/${spouseNode.personId}`}
+                          ref={(el: HTMLAnchorElement | null) => {
+                            setNodeRef(spouseNode.personId, el);
+                          }}
                           className="flex flex-col items-center p-3 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border-secondary)] hover:border-[var(--color-accent-primary)] transition-colors min-w-[100px]"
                         >
                           <div className="w-12 h-12 rounded-full bg-[var(--color-accent-light)] flex items-center justify-center text-lg font-semibold text-[var(--color-accent-primary)] mb-2">

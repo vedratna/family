@@ -11,6 +11,7 @@ import { formatErrorMessage } from "../lib/error-utils";
 import { FAMILY_RELATIONSHIPS_QUERY, FAMILY_MEMBERS_QUERY } from "../lib/graphql-operations";
 import { useCreateRelationship, useEditRelationship, useDeleteRelationship } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
+import { canEditRelationship, canDeleteRelationship } from "../lib/permissions";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
 
@@ -45,7 +46,7 @@ interface EnrichedRelationship {
 export function PersonPage() {
   const { personId } = useParams<{ personId: string }>();
   const mockData = useMockData();
-  const { activeFamilyId } = useFamily();
+  const { activeFamilyId, activeRole } = useFamily();
   const { createRelationship, loading: relLoading } = useCreateRelationship();
   const { editRelationship } = useEditRelationship();
   const { deleteRelationship, loading: deleteRelLoading } = useDeleteRelationship();
@@ -356,12 +357,16 @@ export function PersonPage() {
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1 text-sm font-medium text-[var(--color-text-primary)]">
-                <InlineEdit
-                  value={rel.isA ? rel.aToBLabel : rel.bToALabel}
-                  onSave={(next) => {
-                    handleEditLabel(rel, rel.isA ? "aToBLabel" : "bToALabel", next);
-                  }}
-                />
+                {canEditRelationship(activeRole) ? (
+                  <InlineEdit
+                    value={rel.isA ? rel.aToBLabel : rel.bToALabel}
+                    onSave={(next) => {
+                      handleEditLabel(rel, rel.isA ? "aToBLabel" : "bToALabel", next);
+                    }}
+                  />
+                ) : (
+                  <span>{rel.isA ? rel.aToBLabel : rel.bToALabel}</span>
+                )}
                 <span>&mdash;</span>
                 <span>{rel.otherPersonName}</span>
               </div>
@@ -373,14 +378,16 @@ export function PersonPage() {
               >
                 {rel.status}
               </span>
-              <button
-                onClick={() => {
-                  setDeleteTarget({ personAId: rel.personAId, personBId: rel.personBId });
-                }}
-                className="px-2 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-              >
-                Delete
-              </button>
+              {canDeleteRelationship(activeRole) && (
+                <button
+                  onClick={() => {
+                    setDeleteTarget({ personAId: rel.personAId, personBId: rel.personBId });
+                  }}
+                  className="px-2 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                >
+                  Delete
+                </button>
+              )}
             </div>
           </div>
         ))}

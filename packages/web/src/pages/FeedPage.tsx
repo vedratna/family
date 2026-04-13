@@ -1,7 +1,8 @@
-import { useState, useMemo, type SyntheticEvent } from "react";
+import { useState, useMemo, useEffect, useCallback, type SyntheticEvent } from "react";
 import { Link } from "react-router";
-import { useQuery } from "urql";
+import { useQuery, useClient } from "urql";
 
+import { LoadMoreButton } from "../components/LoadMoreButton";
 import { Loading } from "../components/Loading";
 import { QueryError } from "../components/QueryError";
 import { formatErrorMessage } from "../lib/error-utils";
@@ -97,16 +98,62 @@ export function FeedPage() {
   const mockData = useMockData();
   const { activeFamilyId } = useFamily();
   const { createPost, loading: postLoading } = useCreatePost();
+  const urqlClient = useClient();
 
   const [showForm, setShowForm] = useState(false);
   const [newPostText, setNewPostText] = useState("");
   const [postError, setPostError] = useState<string | null>(null);
+
+  // Pagination state (API mode only)
+  const [accumulatedPosts, setAccumulatedPosts] = useState<ApiFeedPost[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [initializedFamilyId, setInitializedFamilyId] = useState("");
 
   const [feedResult, reexecuteFeed] = useQuery({
     query: FAMILY_FEED_QUERY,
     variables: { familyId: activeFamilyId },
     pause: !isApiMode() || !activeFamilyId,
   });
+
+  // When feed result arrives (initial load), populate accumulated items
+  useEffect(() => {
+    if (!isApiMode()) return;
+    if (feedResult.fetching) return;
+    const raw = feedResult.data as
+      | { familyFeed: { items: ApiFeedPost[]; cursor: string | null } }
+      | undefined;
+    if (raw === undefined) return;
+    setAccumulatedPosts(raw.familyFeed.items);
+    setNextCursor(raw.familyFeed.cursor);
+    setInitializedFamilyId(activeFamilyId);
+  }, [feedResult.fetching, feedResult.data, activeFamilyId]);
+
+  // Reset when family changes
+  useEffect(() => {
+    if (isApiMode() && activeFamilyId !== initializedFamilyId) {
+      setAccumulatedPosts([]);
+      setNextCursor(null);
+    }
+  }, [activeFamilyId, initializedFamilyId]);
+
+  const loadMore = useCallback(() => {
+    if (!isApiMode() || nextCursor === null || loadingMore) return;
+    setLoadingMore(true);
+    void urqlClient
+      .query(FAMILY_FEED_QUERY, { familyId: activeFamilyId, cursor: nextCursor })
+      .toPromise()
+      .then((result) => {
+        const raw = result.data as
+          | { familyFeed: { items: ApiFeedPost[]; cursor: string | null } }
+          | undefined;
+        if (raw) {
+          setAccumulatedPosts((prev) => [...prev, ...raw.familyFeed.items]);
+          setNextCursor(raw.familyFeed.cursor);
+        }
+        setLoadingMore(false);
+      });
+  }, [urqlClient, activeFamilyId, nextCursor, loadingMore]);
 
   // In API mode, also fetch upcoming events to mix into the feed
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -123,11 +170,8 @@ export function FeedPage() {
 
   const feedItems = useMemo((): FeedItem[] | null => {
     if (isApiMode()) {
-      if (feedResult.fetching) return null;
-      const raw = feedResult.data as
-        | { familyFeed: { items: ApiFeedPost[]; cursor: string | null } }
-        | undefined;
-      const posts = raw?.familyFeed.items ?? [];
+      if (feedResult.fetching && accumulatedPosts.length === 0) return null;
+      const posts = accumulatedPosts;
       const postItems: FeedItem[] = posts.map((post) => ({
         type: "post",
         id: post.id,
@@ -177,7 +221,7 @@ export function FeedPage() {
       mockData.persons,
       activeFamilyId,
     );
-  }, [feedResult.fetching, feedResult.data, eventsResult.data, mockData, activeFamilyId, today]);
+  }, [feedResult.fetching, accumulatedPosts, eventsResult.data, mockData, activeFamilyId, today]);
 
   function handleSubmitPost(e: SyntheticEvent) {
     e.preventDefault();
@@ -294,6 +338,9 @@ export function FeedPage() {
           <p className="text-sm text-[var(--color-text-tertiary)]">No posts yet — create one!</p>
         )}
       </div>
+      {isApiMode() && (
+        <LoadMoreButton visible={nextCursor !== null} onClick={loadMore} loading={loadingMore} />
+      )}
     </div>
   );
 }

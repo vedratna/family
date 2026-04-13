@@ -10,6 +10,7 @@ import { formatErrorMessage } from "../lib/error-utils";
 import { FAMILY_MEMBERS_QUERY } from "../lib/graphql-operations";
 import { useInviteMember, useRemoveMember, useUpdateMemberRole } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
+import { canManageMembers } from "../lib/permissions";
 import { toMemberItems, type MemberItem } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
@@ -25,7 +26,7 @@ const ROLE_OPTIONS: Role[] = ["owner", "admin", "editor", "viewer"];
 
 export function MembersPage() {
   const mockData = useMockData();
-  const { activeFamilyId, activeFamily, activePersonId } = useFamily();
+  const { activeFamilyId, activeFamily, activePersonId, activeRole } = useFamily();
   const { inviteMember, loading: inviteLoading } = useInviteMember();
   const { removeMember, loading: removeLoading } = useRemoveMember();
   const { updateMemberRole } = useUpdateMemberRole();
@@ -282,21 +283,29 @@ export function MembersPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <select
-                  value={member.role}
-                  disabled={isSelf}
-                  onChange={(e) => {
-                    handleRoleChange(member.personId, e.target.value as Role);
-                  }}
-                  className={`text-xs font-medium px-2 py-1 rounded-full border-0 ${ROLE_STYLES[member.role] ?? ""} ${isSelf ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
-                >
-                  {ROLE_OPTIONS.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
-                {!isSelf && (
+                {canManageMembers(activeRole) ? (
+                  <select
+                    value={member.role}
+                    disabled={isSelf}
+                    onChange={(e) => {
+                      handleRoleChange(member.personId, e.target.value as Role);
+                    }}
+                    className={`text-xs font-medium px-2 py-1 rounded-full border-0 ${ROLE_STYLES[member.role] ?? ""} ${isSelf ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                  >
+                    {ROLE_OPTIONS.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span
+                    className={`text-xs font-medium px-2 py-1 rounded-full ${ROLE_STYLES[member.role] ?? ""}`}
+                  >
+                    {member.role}
+                  </span>
+                )}
+                {!isSelf && canManageMembers(activeRole) && (
                   <button
                     onClick={() => {
                       setRemoveTarget(member.personId);
