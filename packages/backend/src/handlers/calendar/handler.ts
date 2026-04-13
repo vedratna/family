@@ -1,4 +1,4 @@
-import type { EventType, Role, RSVPStatus } from "@family-app/shared";
+import type { EventType, FamilyEvent, Role, RSVPStatus } from "@family-app/shared";
 import type { AppSyncResolverEvent } from "aws-lambda";
 
 import { DomainError } from "../../domain/errors";
@@ -14,6 +14,8 @@ import {
   GetFamilyEvents,
   RSVPEvent,
 } from "../../use-cases/calendar";
+import { PersonNameResolver, enrichEvents, enrichRSVPs } from "../_shared/enrichment";
+import type { EnrichedEvent, EnrichedRSVP } from "../_shared/enrichment";
 
 const userRepo = new DynamoUserRepository();
 const personRepo = new DynamoPersonRepository();
@@ -33,20 +35,23 @@ interface HandlerArgs {
 
 export async function handler(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
   try {
+    const resolver = new PersonNameResolver(personRepo);
     const field = event.info.fieldName;
     switch (field) {
       case "familyEvents":
-        return await handleFamilyEvents(event);
+        return await handleFamilyEvents(event, resolver);
       case "eventDetail":
-        return await handleEventDetail(event);
+        return await handleEventDetail(event, resolver);
+      case "eventRSVPs":
+        return await handleEventRSVPs(event, resolver);
       case "createEvent":
-        return await handleCreateEvent(event);
+        return await handleCreateEvent(event, resolver);
       case "editEvent":
         return await handleEditEvent(event);
       case "deleteEvent":
         return await handleDeleteEvent(event);
       case "rsvpEvent":
-        return await handleRSVPEvent(event);
+        return await handleRSVPEvent(event, resolver);
       default:
         throw new Error(`Unknown field: ${field}`);
     }
@@ -79,7 +84,10 @@ async function resolveRequester(
   return { personId: person.id, role: membership.role };
 }
 
-async function handleFamilyEvents(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+async function handleFamilyEvents(
+  event: AppSyncResolverEvent<HandlerArgs>,
+  resolver: PersonNameResolver,
+): Promise<EnrichedEvent[]> {
   const args = event.arguments;
   const input: { familyId: string; startDate: string; endDate: string; eventType?: string } = {
     familyId: args.familyId as string,
@@ -89,15 +97,42 @@ async function handleFamilyEvents(event: AppSyncResolverEvent<HandlerArgs>): Pro
   if (typeof args.eventType === "string") {
     input.eventType = args.eventType;
   }
-  return getFamilyEvents.execute(input);
+  const events = await getFamilyEvents.execute(input);
+  return enrichEvents(events, resolver);
 }
 
-async function handleEventDetail(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+async function handleEventDetail(
+  event: AppSyncResolverEvent<HandlerArgs>,
+  resolver: PersonNameResolver,
+): Promise<EnrichedEvent | null> {
   const args = event.arguments;
-  return eventRepo.getById(args.familyId as string, args.date as string, args.eventId as string);
+  const result = await eventRepo.getById(
+    args.familyId as string,
+    args.date as string,
+    args.eventId as string,
+  );
+  if (result === undefined) {
+    return null;
+  }
+  const enriched = await enrichEvents([result], resolver);
+  return enriched[0] ?? null;
 }
 
-async function handleCreateEvent(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+async function handleEventRSVPs(
+  event: AppSyncResolverEvent<HandlerArgs>,
+  resolver: PersonNameResolver,
+): Promise<EnrichedRSVP[]> {
+  const args = event.arguments;
+  const eventId = args.eventId as string;
+  const familyId = args.familyId as string;
+  const rsvps = await eventRSVPRepo.getByEvent(eventId);
+  return enrichRSVPs(rsvps, familyId, resolver);
+}
+
+async function handleCreateEvent(
+  event: AppSyncResolverEvent<HandlerArgs>,
+  resolver: PersonNameResolver,
+): Promise<EnrichedEvent> {
   const args = event.arguments;
   const familyId = args.familyId as string;
   const { personId, role } = await resolveRequester(event, familyId);
@@ -121,10 +156,16 @@ async function handleCreateEvent(event: AppSyncResolverEvent<HandlerArgs>): Prom
   if (typeof args.recurrenceRule === "string") {
     input.recurrenceRule = args.recurrenceRule;
   }
-  return createEvent.execute(input);
+  const created: FamilyEvent = await createEvent.execute(input);
+  const enriched = await enrichEvents([created], resolver);
+  const result = enriched[0];
+  if (result === undefined) {
+    throw new Error("INTERNAL: enrichment failed for created event");
+  }
+  return result;
 }
 
-async function handleEditEvent(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+async function handleEditEvent(event: AppSyncResolverEvent<HandlerArgs>): Promise<boolean> {
   const args = event.arguments;
   const familyId = args.familyId as string;
   const { role } = await resolveRequester(event, familyId);
@@ -143,7 +184,7 @@ async function handleEditEvent(event: AppSyncResolverEvent<HandlerArgs>): Promis
   return true;
 }
 
-async function handleDeleteEvent(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+async function handleDeleteEvent(event: AppSyncResolverEvent<HandlerArgs>): Promise<boolean> {
   const args = event.arguments;
   const familyId = args.familyId as string;
   const { role } = await resolveRequester(event, familyId);
@@ -151,13 +192,18 @@ async function handleDeleteEvent(event: AppSyncResolverEvent<HandlerArgs>): Prom
   return true;
 }
 
-async function handleRSVPEvent(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+async function handleRSVPEvent(
+  event: AppSyncResolverEvent<HandlerArgs>,
+  resolver: PersonNameResolver,
+): Promise<EnrichedRSVP> {
   const args = event.arguments;
   const familyId = args.familyId as string;
   const { personId } = await resolveRequester(event, familyId);
-  return rsvpEvent.execute({
+  const rsvp = await rsvpEvent.execute({
     eventId: args.eventId as string,
     personId,
     status: args.status as RSVPStatus,
   });
+  const personName = await resolver.getName(familyId, personId);
+  return { ...rsvp, personName };
 }

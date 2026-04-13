@@ -55,7 +55,7 @@ echo "$FEED" | grep -qE '"commentCount":[1-9]' || fail "Feed shows non-zero comm
 pass "Feed returns posts with author names and real counts"
 
 # RSVPs include person names
-RSVPS=$(gql '{ eventRSVPs(eventId: "evt-002") { personName status } eventDetail(familyId: "family-disney", date: "2026-04-20", eventId: "evt-002") { creatorName } }' "user-1")
+RSVPS=$(gql '{ eventRSVPs(eventId: "evt-002", familyId: "family-disney") { personName status } eventDetail(familyId: "family-disney", date: "2026-04-20", eventId: "evt-002") { creatorName } }' "user-1")
 echo "$RSVPS" | grep -q '"personName":"Mickey Mouse"' || fail "RSVPs include personName" "$RSVPS"
 echo "$RSVPS" | grep -q '"creatorName":"Mickey Mouse"' || fail "Event detail includes creatorName" "$RSVPS"
 pass "RSVPs and event creator show resolved names"

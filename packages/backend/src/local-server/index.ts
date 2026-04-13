@@ -309,7 +309,7 @@ const resolvers = {
       return event;
     },
 
-    eventRSVPs: async (_: unknown, args: { eventId: string }) => {
+    eventRSVPs: async (_: unknown, args: { eventId: string; familyId: string }) => {
       return eventRSVPRepo.getByEvent(args.eventId);
     },
 

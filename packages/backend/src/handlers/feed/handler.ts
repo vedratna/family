@@ -1,4 +1,4 @@
-import type { Role } from "@family-app/shared";
+import type { Post, Comment, Reaction, Role } from "@family-app/shared";
 import type { AppSyncResolverEvent } from "aws-lambda";
 
 import { DomainError } from "../../domain/errors";
@@ -17,6 +17,14 @@ import {
   GetPostComments,
   RemoveReaction,
 } from "../../use-cases/feed";
+import {
+  PersonNameResolver,
+  enrichPosts,
+  enrichSinglePost,
+  enrichComments,
+  enrichReactions,
+} from "../_shared/enrichment";
+import type { EnrichedPost, EnrichedComment, EnrichedReaction } from "../_shared/enrichment";
 
 const userRepo = new DynamoUserRepository();
 const personRepo = new DynamoPersonRepository();
@@ -39,22 +47,27 @@ interface HandlerArgs {
 
 export async function handler(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
   try {
+    const resolver = new PersonNameResolver(personRepo);
     const field = event.info.fieldName;
     switch (field) {
       case "familyFeed":
-        return await handleFamilyFeed(event);
+        return await handleFamilyFeed(event, resolver);
+      case "postDetail":
+        return await handlePostDetail(event, resolver);
       case "postComments":
-        return await handlePostComments(event);
+        return await handlePostComments(event, resolver);
+      case "postReactions":
+        return await handlePostReactions(event, resolver);
       case "createPost":
-        return await handleCreatePost(event);
+        return await handleCreatePost(event, resolver);
       case "deletePost":
         return await handleDeletePost(event);
       case "addReaction":
-        return await handleAddReaction(event);
+        return await handleAddReaction(event, resolver);
       case "removeReaction":
         return await handleRemoveReaction(event);
       case "addComment":
-        return await handleAddComment(event);
+        return await handleAddComment(event, resolver);
       default:
         throw new Error(`Unknown field: ${field}`);
     }
@@ -87,7 +100,10 @@ async function resolveRequester(
   return { personId: person.id, role: membership.role };
 }
 
-async function handleFamilyFeed(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+async function handleFamilyFeed(
+  event: AppSyncResolverEvent<HandlerArgs>,
+  resolver: PersonNameResolver,
+): Promise<{ items: EnrichedPost[]; cursor: string | undefined }> {
   const args = event.arguments;
   const input: { familyId: string; limit?: number; cursor?: string } = {
     familyId: args.familyId as string,
@@ -98,36 +114,77 @@ async function handleFamilyFeed(event: AppSyncResolverEvent<HandlerArgs>): Promi
   if (typeof args.cursor === "string") {
     input.cursor = args.cursor;
   }
-  return getFamilyFeed.execute(input);
+  const result = await getFamilyFeed.execute(input);
+  const enrichedItems = await enrichPosts(result.items, resolver, reactionRepo, commentRepo);
+  return { items: enrichedItems, cursor: result.cursor };
 }
 
-async function handlePostComments(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+async function handlePostDetail(
+  event: AppSyncResolverEvent<HandlerArgs>,
+  resolver: PersonNameResolver,
+): Promise<EnrichedPost | null> {
   const args = event.arguments;
-  const input: { postId: string; limit?: number; cursor?: string } = {
-    postId: args.postId as string,
-  };
+  const postId = args.postId as string;
+  const post = await postRepo.getById(postId);
+  if (post === undefined) {
+    return null;
+  }
+  return enrichSinglePost(post, resolver, reactionRepo, commentRepo);
+}
+
+async function handlePostComments(
+  event: AppSyncResolverEvent<HandlerArgs>,
+  resolver: PersonNameResolver,
+): Promise<{ items: EnrichedComment[]; cursor: string | undefined }> {
+  const args = event.arguments;
+  const postId = args.postId as string;
+  const input: { postId: string; limit?: number; cursor?: string } = { postId };
   if (typeof args.limit === "number") {
     input.limit = args.limit;
   }
   if (typeof args.cursor === "string") {
     input.cursor = args.cursor;
   }
-  return getPostComments.execute(input);
+  const result = await getPostComments.execute(input);
+
+  // Look up the post to get familyId for name resolution
+  const post = await postRepo.getById(postId);
+  const familyId = post?.familyId ?? "";
+  const enrichedItems = await enrichComments(result.items, familyId, resolver);
+  return { items: enrichedItems, cursor: result.cursor };
 }
 
-async function handleCreatePost(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+async function handlePostReactions(
+  event: AppSyncResolverEvent<HandlerArgs>,
+  resolver: PersonNameResolver,
+): Promise<EnrichedReaction[]> {
+  const args = event.arguments;
+  const postId = args.postId as string;
+  const reactions = await reactionRepo.getByPostId(postId);
+
+  // Look up the post to get familyId for name resolution
+  const post = await postRepo.getById(postId);
+  const familyId = post?.familyId ?? "";
+  return enrichReactions(reactions, familyId, resolver);
+}
+
+async function handleCreatePost(
+  event: AppSyncResolverEvent<HandlerArgs>,
+  resolver: PersonNameResolver,
+): Promise<EnrichedPost> {
   const args = event.arguments;
   const familyId = args.familyId as string;
   const { personId, role } = await resolveRequester(event, familyId);
-  return createPost.execute({
+  const post: Post = await createPost.execute({
     familyId,
     authorPersonId: personId,
     textContent: args.textContent as string,
     requesterRole: role,
   });
+  return enrichSinglePost(post, resolver, reactionRepo, commentRepo);
 }
 
-async function handleDeletePost(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+async function handleDeletePost(event: AppSyncResolverEvent<HandlerArgs>): Promise<boolean> {
   const args = event.arguments;
   const familyId = args.familyId as string;
   const { personId, role } = await resolveRequester(event, familyId);
@@ -140,18 +197,23 @@ async function handleDeletePost(event: AppSyncResolverEvent<HandlerArgs>): Promi
   return true;
 }
 
-async function handleAddReaction(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+async function handleAddReaction(
+  event: AppSyncResolverEvent<HandlerArgs>,
+  resolver: PersonNameResolver,
+): Promise<EnrichedReaction> {
   const args = event.arguments;
   const familyId = args.familyId as string;
   const { personId } = await resolveRequester(event, familyId);
-  return addReaction.execute({
+  const reaction: Reaction = await addReaction.execute({
     postId: args.postId as string,
     personId,
     emoji: args.emoji as string,
   });
+  const personName = await resolver.getName(familyId, personId);
+  return { ...reaction, personName };
 }
 
-async function handleRemoveReaction(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+async function handleRemoveReaction(event: AppSyncResolverEvent<HandlerArgs>): Promise<boolean> {
   const args = event.arguments;
   const familyId = args.familyId as string;
   const { personId } = await resolveRequester(event, familyId);
@@ -159,15 +221,20 @@ async function handleRemoveReaction(event: AppSyncResolverEvent<HandlerArgs>): P
   return true;
 }
 
-async function handleAddComment(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+async function handleAddComment(
+  event: AppSyncResolverEvent<HandlerArgs>,
+  resolver: PersonNameResolver,
+): Promise<EnrichedComment> {
   const args = event.arguments;
   const familyId = args.familyId as string;
   const { personId, role } = await resolveRequester(event, familyId);
-  return addComment.execute({
+  const comment: Comment = await addComment.execute({
     postId: args.postId as string,
     familyId,
     personId,
     textContent: args.textContent as string,
     requesterRole: role,
   });
+  const personName = await resolver.getName(familyId, personId);
+  return { ...comment, personName };
 }

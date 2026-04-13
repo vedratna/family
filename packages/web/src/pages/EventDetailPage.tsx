@@ -60,8 +60,8 @@ export function EventDetailPage() {
 
   const [rsvpsResult, reexecuteRsvps] = useQuery({
     query: EVENT_RSVPS_QUERY,
-    variables: { eventId: eventId ?? "" },
-    pause: !isApiMode() || eventId === undefined,
+    variables: { eventId: eventId ?? "", familyId: activeFamilyId },
+    pause: !isApiMode() || eventId === undefined || !activeFamilyId,
   });
 
   const event = useMemo((): ApiEvent | FamilyEvent | null => {
