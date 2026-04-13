@@ -21,7 +21,8 @@ test.describe("Chores", () => {
 
     // Chore should appear with "pending" status
     await expect(page.getByText(choreTitle)).toBeVisible();
-    const choreCard = page.locator("div").filter({ hasText: choreTitle }).last();
+    // Locate the chore card — it's a rounded-xl container with the chore title
+    const choreCard = page.locator("div.rounded-xl").filter({ hasText: choreTitle });
     await expect(choreCard.getByText("pending")).toBeVisible();
 
     // Complete the chore

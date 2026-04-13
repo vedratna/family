@@ -38,7 +38,7 @@ test.describe("Invite flow", () => {
     await expect(ownerPage.getByRole("heading", { name: "Members" })).toBeVisible();
 
     // Click Invite button
-    await ownerPage.getByRole("button", { name: "Invite" }).click();
+    await ownerPage.getByRole("button", { name: "Invite", exact: true }).click();
 
     // Fill invite form
     await ownerPage.getByPlaceholder("Phone number").fill(invitePhone);
@@ -58,13 +58,16 @@ test.describe("Invite flow", () => {
     await inviteePage.getByRole("button", { name: "Sign Up" }).click();
     await inviteePage.getByLabel("Phone").fill(invitePhone);
     await inviteePage.getByLabel("Display Name").fill(inviteeName);
-    await inviteePage.getByRole("button", { name: "Sign Up", exact: true }).click();
+    await inviteePage.getByRole("button", { name: "Sign Up", exact: true }).nth(1).click();
 
     // Should see the create-first-family page with invitation
     await expect(inviteePage.getByText("Welcome to Family App!")).toBeVisible();
 
+    // Switch to Invitations tab to see the pending invitation
+    await inviteePage.getByRole("button", { name: /Invitations/ }).click();
+
     // The invitation should be visible
-    await expect(inviteePage.getByText(family.familyName)).toBeVisible();
+    await expect(inviteePage.getByText(family.familyName, { exact: true })).toBeVisible();
 
     // Accept the invitation
     await inviteePage.getByRole("button", { name: `Join ${family.familyName}` }).click();

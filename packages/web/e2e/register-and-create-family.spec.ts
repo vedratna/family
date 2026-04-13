@@ -15,7 +15,7 @@ test.describe("Register and create first family", () => {
     // Fill signup form
     await page.getByLabel("Phone").fill(phone);
     await page.getByLabel("Display Name").fill(displayName);
-    await page.getByRole("button", { name: "Sign Up", exact: true }).click();
+    await page.getByRole("button", { name: "Sign Up", exact: true }).nth(1).click();
 
     // Should redirect to create-first-family page (no families yet)
     await expect(page.getByText("Welcome to Family App!")).toBeVisible();
@@ -31,7 +31,7 @@ test.describe("Register and create first family", () => {
     await page.getByRole("button", { name: "Create Family" }).click();
 
     // Should navigate to feed with empty state
-    await expect(page.getByText("Feed")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
     await expect(page.getByText("No posts yet")).toBeVisible();
   });
 });

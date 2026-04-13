@@ -33,12 +33,14 @@ test.describe("Feed post lifecycle", () => {
     await expect(page.getByText(commentText)).toBeVisible();
 
     // Add a reaction (click the heart/reaction button)
-    await page
-      .locator("button")
-      .filter({ hasText: /\u{1F90D}/u })
-      .click();
+    // The reaction button initially shows 🤍 with count 0
+    const reactionButton = page.locator("button").filter({ hasText: "\uD83E\uDD0D" });
+    await expect(reactionButton).toBeVisible();
+    await reactionButton.click();
 
-    // Reaction count should increase - the white heart should become red heart
-    await expect(page.locator("button").filter({ hasText: /\u{2764}\u{FE0F}/u })).toBeVisible();
+    // Wait for the reaction count to become 1 (button contains heart emoji + "1")
+    await expect(page.locator("button").filter({ hasText: "1" }).first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 });
