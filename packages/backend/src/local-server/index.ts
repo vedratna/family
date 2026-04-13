@@ -343,7 +343,7 @@ const resolvers = {
     ) => {
       await resolveUserId(ctx);
       const { personId, role } = await resolveRequester(ctx, args.input.familyId);
-      return inviteMember.execute({
+      const result = await inviteMember.execute({
         familyId: args.input.familyId,
         inviterPersonId: personId,
         inviterRole: role,
@@ -353,6 +353,7 @@ const resolvers = {
         inverseRelationshipLabel: args.input.inverseRelationshipLabel,
         role: args.input.role as Role,
       });
+      return result.invitation;
     },
 
     acceptInvitation: async (
@@ -361,12 +362,13 @@ const resolvers = {
       ctx: Context,
     ) => {
       const userId = await resolveUserId(ctx);
-      return acceptInvitation.execute({
+      const result = await acceptInvitation.execute({
         familyId: args.familyId,
         phone: args.phone,
         userId,
         displayName: args.displayName,
       });
+      return { person: result.person, role: result.membership.role };
     },
 
     addNonAppPerson: async (_: unknown, args: { familyId: string; name: string }, ctx: Context) => {

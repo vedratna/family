@@ -94,6 +94,7 @@ export function FeedPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [newPostText, setNewPostText] = useState("");
+  const [postError, setPostError] = useState<string | null>(null);
 
   const [feedResult, reexecuteFeed] = useQuery({
     query: FAMILY_FEED_QUERY,
@@ -135,21 +136,33 @@ export function FeedPage() {
     e.preventDefault();
     if (!newPostText.trim()) return;
 
+    setPostError(null);
+
     if (isApiMode()) {
       void createPost({
         input: { familyId: activeFamilyId, textContent: newPostText.trim() },
-      }).then(() => {
+      }).then((result) => {
+        if (result.error) {
+          const msg = result.error.message.replace("[GraphQL] ", "");
+          if (msg.includes("ActivationGateError") || msg.includes("at least 2")) {
+            setPostError("Invite at least one more member before posting.");
+          } else {
+            setPostError(msg);
+          }
+          return;
+        }
         reexecuteFeed({ requestPolicy: "network-only" });
+        setNewPostText("");
+        setShowForm(false);
       });
     } else {
       console.log("[mock] createPost:", {
         familyId: activeFamilyId,
         textContent: newPostText.trim(),
       });
+      setNewPostText("");
+      setShowForm(false);
     }
-
-    setNewPostText("");
-    setShowForm(false);
   }
 
   if (feedItems === null) {
@@ -188,6 +201,7 @@ export function FeedPage() {
             className="w-full p-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] resize-none"
             rows={3}
           />
+          {postError !== null && <p className="mt-2 text-sm text-red-600">{postError}</p>}
           <div className="flex justify-end mt-2">
             <button
               type="submit"

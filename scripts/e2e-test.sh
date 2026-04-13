@@ -107,4 +107,33 @@ echo "$CHORE" | grep -q "E2E Chore" || fail "Create chore" "$CHORE"
 pass "Created chore in Disney Family"
 
 echo ""
+echo "== Invite flow: User A invites phone, User B signs up with that phone, accepts =="
+INVITE_PHONE="+91$(date +%s | tail -c 8)99"
+INV=$(gql "mutation { inviteMember(input: { familyId: \"family-disney\", phone: \"$INVITE_PHONE\", name: \"Invited B\", relationshipToInviter: \"Sibling\", inverseRelationshipLabel: \"Sibling\", role: \"editor\" }) { phone status } }" "user-1")
+echo "$INV" | grep -q "\"phone\":\"$INVITE_PHONE\"" || fail "Invite returns invitation with phone" "$INV"
+echo "$INV" | grep -q '"status":"pending"' || fail "Invitation status is pending" "$INV"
+pass "Mickey invited $INVITE_PHONE"
+
+# Invitee registers
+REG_INVITED=$(gql "mutation { register(phone: \"$INVITE_PHONE\", cognitoSub: \"invited-$(date +%s)\", displayName: \"Invited B\") { id displayName } }")
+INVITED_ID=$(echo "$REG_INVITED" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["data"]["register"]["id"])')
+[ -n "$INVITED_ID" ] || fail "Invited user can register" "$REG_INVITED"
+pass "Invited user registered with invited phone"
+
+# Invitee accepts invitation
+ACCEPT=$(gql "mutation { acceptInvitation(familyId: \"family-disney\", phone: \"$INVITE_PHONE\", displayName: \"Invited B\") { person { id name } role } }" "$INVITED_ID")
+echo "$ACCEPT" | grep -q '"role":"editor"' || fail "Accept invitation returns role" "$ACCEPT"
+pass "Invited user accepted invitation"
+
+# Invitee now sees Disney Family in myFamilies
+AFTER_ACCEPT=$(gql '{ myFamilies { family { id name } role } }' "$INVITED_ID")
+echo "$AFTER_ACCEPT" | grep -q "Disney Family" || fail "Invitee sees Disney Family" "$AFTER_ACCEPT"
+pass "Invitee now member of Disney Family"
+
+# Invitee can post
+INV_POST=$(gql 'mutation { createPost(input: { familyId: "family-disney", textContent: "Thanks for the invite!" }) { id textContent } }' "$INVITED_ID")
+echo "$INV_POST" | grep -q "Thanks for the invite" || fail "Invitee can post in family" "$INV_POST"
+pass "Invitee can post in family"
+
+echo ""
 echo -e "\033[32m== All end-to-end tests passed ==\033[0m"
