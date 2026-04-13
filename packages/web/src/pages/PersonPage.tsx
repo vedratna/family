@@ -1,6 +1,9 @@
-import { useMemo } from "react";
+import type { RelationshipType } from "@family-app/shared";
+import { useMemo, useState, type SyntheticEvent } from "react";
 import { useParams, Link } from "react-router";
 
+import { useCreateRelationship } from "../lib/hooks";
+import { isApiMode } from "../lib/mode";
 import type { PersonRelationship } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
@@ -10,12 +13,35 @@ const STATUS_BADGE: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
 };
 
+const RELATIONSHIP_TYPES: RelationshipType[] = [
+  "parent-child",
+  "spouse",
+  "sibling",
+  "in-law",
+  "grandparent-grandchild",
+  "uncle-aunt",
+  "cousin",
+  "custom",
+];
+
 export function PersonPage() {
   const { personId } = useParams<{ personId: string }>();
   const { persons, relationships } = useMockData();
   const { activeFamilyId } = useFamily();
+  const { createRelationship, loading: relLoading } = useCreateRelationship();
+
+  const [showForm, setShowForm] = useState(false);
+  const [otherPersonId, setOtherPersonId] = useState("");
+  const [relType, setRelType] = useState<RelationshipType>("parent-child");
+  const [aToBLabel, setAToBLabel] = useState("");
+  const [bToALabel, setBToALabel] = useState("");
 
   const person = persons.find((p) => p.id === personId);
+
+  const familyPersons = useMemo(
+    () => persons.filter((p) => p.familyId === activeFamilyId && p.id !== personId),
+    [persons, activeFamilyId, personId],
+  );
 
   const personRelationships = useMemo<PersonRelationship[]>(() => {
     const familyRels = relationships.filter((r) => r.familyId === activeFamilyId);
@@ -23,17 +49,43 @@ export function PersonPage() {
       .filter((r) => r.personAId === personId || r.personBId === personId)
       .map((r) => {
         const isA = r.personAId === personId;
-        const otherPersonId = isA ? r.personBId : r.personAId;
+        const otherPId = isA ? r.personBId : r.personAId;
         const label = isA ? r.aToBLabel : r.bToALabel;
-        const other = persons.find((p) => p.id === otherPersonId);
+        const other = persons.find((p) => p.id === otherPId);
         return {
           label,
-          otherPersonName: other?.name ?? otherPersonId,
+          otherPersonName: other?.name ?? otherPId,
           type: r.type,
           status: r.status,
         };
       });
   }, [relationships, activeFamilyId, personId, persons]);
+
+  function handleAddRelationship(e: SyntheticEvent) {
+    e.preventDefault();
+    if (!otherPersonId || !aToBLabel.trim() || !bToALabel.trim()) return;
+
+    const input = {
+      familyId: activeFamilyId,
+      personAId: personId,
+      personBId: otherPersonId,
+      aToBLabel: aToBLabel.trim(),
+      bToALabel: bToALabel.trim(),
+      type: relType,
+    };
+
+    if (isApiMode()) {
+      void createRelationship({ input });
+    } else {
+      console.log("[mock] createRelationship:", input);
+    }
+
+    setOtherPersonId("");
+    setRelType("parent-child");
+    setAToBLabel("");
+    setBToALabel("");
+    setShowForm(false);
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-4">
@@ -52,9 +104,81 @@ export function PersonPage() {
         )}
       </div>
 
-      <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
-        Relationships ({personRelationships.length})
-      </h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-base font-semibold text-[var(--color-text-primary)]">
+          Relationships ({personRelationships.length})
+        </h2>
+        <button
+          onClick={() => {
+            setShowForm((v) => !v);
+          }}
+          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-accent-on)] hover:opacity-90 transition-opacity"
+        >
+          {showForm ? "Cancel" : "Add Relationship"}
+        </button>
+      </div>
+
+      {showForm && (
+        <form
+          onSubmit={handleAddRelationship}
+          className="mb-4 p-4 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border-secondary)] flex flex-col gap-3"
+        >
+          <select
+            value={otherPersonId}
+            onChange={(e) => {
+              setOtherPersonId(e.target.value);
+            }}
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
+          >
+            <option value="">Select person</option>
+            {familyPersons.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={relType}
+            onChange={(e) => {
+              setRelType(e.target.value as RelationshipType);
+            }}
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
+          >
+            {RELATIONSHIP_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+          <input
+            type="text"
+            value={aToBLabel}
+            onChange={(e) => {
+              setAToBLabel(e.target.value);
+            }}
+            placeholder="Label A to B (e.g. Father)"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+          />
+          <input
+            type="text"
+            value={bToALabel}
+            onChange={(e) => {
+              setBToALabel(e.target.value);
+            }}
+            placeholder="Label B to A (e.g. Son)"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+          />
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={relLoading || !otherPersonId || !aToBLabel.trim() || !bToALabel.trim()}
+              className="px-4 py-1.5 text-sm font-medium rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-accent-on)] hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {relLoading ? "Adding..." : "Add Relationship"}
+            </button>
+          </div>
+        </form>
+      )}
 
       <div className="flex flex-col gap-2">
         {personRelationships.map((rel, i) => (

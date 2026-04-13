@@ -1,6 +1,8 @@
-import { useMemo } from "react";
+import { useState, useMemo, type SyntheticEvent } from "react";
 import { Link } from "react-router";
 
+import { useCreatePost } from "../lib/hooks";
+import { isApiMode } from "../lib/mode";
 import { toFeedItems, type FeedItem } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
@@ -77,15 +79,73 @@ function EventCard({ item }: { item: FeedItem & { type: "event" } }) {
 export function FeedPage() {
   const { posts, events, comments, reactions, persons } = useMockData();
   const { activeFamilyId } = useFamily();
+  const { createPost, loading: postLoading } = useCreatePost();
+
+  const [showForm, setShowForm] = useState(false);
+  const [newPostText, setNewPostText] = useState("");
 
   const feedItems = useMemo(
     () => toFeedItems(posts, events, comments, reactions, persons, activeFamilyId),
     [posts, events, comments, reactions, persons, activeFamilyId],
   );
 
+  function handleSubmitPost(e: SyntheticEvent) {
+    e.preventDefault();
+    if (!newPostText.trim()) return;
+
+    if (isApiMode()) {
+      void createPost({ input: { familyId: activeFamilyId, textContent: newPostText.trim() } });
+    } else {
+      console.log("[mock] createPost:", {
+        familyId: activeFamilyId,
+        textContent: newPostText.trim(),
+      });
+    }
+
+    setNewPostText("");
+    setShowForm(false);
+  }
+
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-4">Feed</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Feed</h1>
+        <button
+          onClick={() => {
+            setShowForm((v) => !v);
+          }}
+          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-accent-on)] hover:opacity-90 transition-opacity"
+        >
+          {showForm ? "Cancel" : "New Post"}
+        </button>
+      </div>
+
+      {showForm && (
+        <form
+          onSubmit={handleSubmitPost}
+          className="mb-4 p-4 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border-secondary)]"
+        >
+          <textarea
+            value={newPostText}
+            onChange={(e) => {
+              setNewPostText(e.target.value);
+            }}
+            placeholder="What's on your mind?"
+            className="w-full p-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] resize-none"
+            rows={3}
+          />
+          <div className="flex justify-end mt-2">
+            <button
+              type="submit"
+              disabled={postLoading || !newPostText.trim()}
+              className="px-4 py-1.5 text-sm font-medium rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-accent-on)] hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {postLoading ? "Posting..." : "Post"}
+            </button>
+          </div>
+        </form>
+      )}
+
       <div className="flex flex-col gap-3">
         {feedItems.map((item) =>
           item.type === "post" ? (
@@ -93,6 +153,9 @@ export function FeedPage() {
           ) : (
             <EventCard key={item.id} item={item} />
           ),
+        )}
+        {feedItems.length === 0 && (
+          <p className="text-sm text-[var(--color-text-tertiary)]">No posts yet.</p>
         )}
       </div>
     </div>

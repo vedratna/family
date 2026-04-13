@@ -1,6 +1,9 @@
+import type { RSVPStatus } from "@family-app/shared";
 import { useMemo } from "react";
 import { useParams, Link } from "react-router";
 
+import { useRSVPEvent } from "../lib/hooks";
+import { isApiMode } from "../lib/mode";
 import { personName } from "../lib/transforms";
 import { useMockData } from "../providers/MockDataProvider";
 
@@ -10,9 +13,16 @@ const STATUS_COLORS: Record<string, string> = {
   "not-going": "bg-red-100 text-red-800",
 };
 
+const RSVP_OPTIONS: { label: string; value: RSVPStatus }[] = [
+  { label: "Going", value: "going" },
+  { label: "Maybe", value: "maybe" },
+  { label: "Can't", value: "not-going" },
+];
+
 export function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>();
   const { events, rsvps, persons } = useMockData();
+  const { rsvpEvent, loading: rsvpLoading } = useRSVPEvent();
 
   const event = events.find((e) => e.id === eventId);
 
@@ -24,6 +34,14 @@ export function EventDetailPage() {
         status: r.status,
       }));
   }, [rsvps, eventId, persons]);
+
+  function handleRSVP(status: RSVPStatus) {
+    if (isApiMode()) {
+      void rsvpEvent({ input: { eventId, status } });
+    } else {
+      console.log("[mock] rsvpEvent:", { eventId, status });
+    }
+  }
 
   if (!event) {
     return (
@@ -78,6 +96,22 @@ export function EventDetailPage() {
             {event.description}
           </p>
         )}
+      </div>
+
+      {/* RSVP Buttons */}
+      <div className="mt-4 flex gap-2">
+        {RSVP_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => {
+              handleRSVP(opt.value);
+            }}
+            disabled={rsvpLoading}
+            className="flex-1 py-2 text-sm font-medium rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-card)] text-[var(--color-text-primary)] hover:border-[var(--color-accent-primary)] transition-colors disabled:opacity-50"
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       <div className="mt-6">

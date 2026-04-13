@@ -1,12 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, useState, type SyntheticEvent } from "react";
 import { useParams, Link } from "react-router";
 
+import { useAddComment } from "../lib/hooks";
+import { isApiMode } from "../lib/mode";
 import { toCommentItems, personName } from "../lib/transforms";
 import { useMockData } from "../providers/MockDataProvider";
 
 export function PostDetailPage() {
   const { postId } = useParams<{ postId: string }>();
   const { posts, comments, reactions, persons } = useMockData();
+  const { addComment, loading: commentLoading } = useAddComment();
+
+  const [commentText, setCommentText] = useState("");
 
   const post = posts.find((p) => p.id === postId);
 
@@ -32,6 +37,19 @@ export function PostDetailPage() {
   }
 
   const authorName = personName(persons, post.authorPersonId);
+
+  function handleAddComment(e: SyntheticEvent) {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+
+    if (isApiMode()) {
+      void addComment({ input: { postId, textContent: commentText.trim() } });
+    } else {
+      console.log("[mock] addComment:", { postId, textContent: commentText.trim() });
+    }
+
+    setCommentText("");
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-4">
@@ -81,6 +99,26 @@ export function PostDetailPage() {
             <p className="text-sm text-[var(--color-text-tertiary)]">No comments yet.</p>
           )}
         </div>
+
+        {/* Add Comment Form */}
+        <form onSubmit={handleAddComment} className="mt-4 flex gap-2">
+          <input
+            type="text"
+            value={commentText}
+            onChange={(e) => {
+              setCommentText(e.target.value);
+            }}
+            placeholder="Write a comment..."
+            className="flex-1 px-3 py-2 text-sm rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+          />
+          <button
+            type="submit"
+            disabled={commentLoading || !commentText.trim()}
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-accent-on)] hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {commentLoading ? "..." : "Send"}
+          </button>
+        </form>
       </div>
     </div>
   );

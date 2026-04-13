@@ -1,6 +1,9 @@
 import type { ThemeName } from "@family-app/shared";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 
+import { useUpdateFamilyTheme } from "../lib/hooks";
+import { isApiMode } from "../lib/mode";
+import { useAuth } from "../providers/AuthProvider";
 import { useFamily } from "../providers/FamilyProvider";
 
 const THEME_OPTIONS: { name: ThemeName; color: string }[] = [
@@ -16,10 +19,34 @@ const THEME_OPTIONS: { name: ThemeName; color: string }[] = [
 
 export function SettingsPage() {
   const { families, activeFamilyId, activeThemeName, switchFamily } = useFamily();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const { updateFamilyTheme } = useUpdateFamilyTheme();
+
+  function handleLogout() {
+    logout();
+    void navigate("/login");
+  }
+
+  function handleThemeChange(themeName: ThemeName) {
+    if (isApiMode()) {
+      void updateFamilyTheme({ input: { familyId: activeFamilyId, themeName } });
+    } else {
+      console.log("[mock] updateFamilyTheme:", { familyId: activeFamilyId, themeName });
+    }
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-4">
       <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-6">Settings</h1>
+
+      {/* Logout */}
+      <button
+        onClick={handleLogout}
+        className="w-full p-4 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border-secondary)] hover:border-red-400 transition-colors mb-6 text-left"
+      >
+        <span className="text-sm font-medium text-red-600">Log out</span>
+      </button>
 
       {/* Members link */}
       <Link
@@ -39,6 +66,9 @@ export function SettingsPage() {
           {THEME_OPTIONS.map((theme) => (
             <button
               key={theme.name}
+              onClick={() => {
+                handleThemeChange(theme.name);
+              }}
               className={`w-10 h-10 rounded-full border-2 transition-all ${
                 theme.name === activeThemeName
                   ? "border-[var(--color-text-primary)] scale-110"
