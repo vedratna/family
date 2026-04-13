@@ -157,9 +157,11 @@ const PORT = Number(process.env["PORT"] ?? "4000");
 const typeDefs = readFileSync(resolve(__dirname, "../../../infra/graphql/schema.graphql"), "utf-8");
 
 async function resolveUserId(ctx: Context): Promise<string> {
-  const user = await userRepo.getByCognitoSub(ctx.userId);
+  // In local dev, the x-user-id header carries the userId directly (no Cognito).
+  // Verify the user exists by id.
+  const user = await userRepo.getById(ctx.userId);
   if (user === undefined) {
-    throw new Error("USER_NOT_FOUND: No user found for this Cognito identity");
+    throw new Error(`USER_NOT_FOUND: No user found with id '${ctx.userId}'`);
   }
   return user.id;
 }
@@ -315,7 +317,7 @@ const resolvers = {
     // Family
     createFamily: async (_: unknown, args: { name: string; themeName: string }, ctx: Context) => {
       const userId = await resolveUserId(ctx);
-      const user = await userRepo.getByCognitoSub(ctx.userId);
+      const user = await userRepo.getById(userId);
       return createFamily.execute({
         name: args.name,
         themeName: args.themeName as ThemeName,
