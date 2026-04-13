@@ -48,7 +48,10 @@ export const ACCEPT_INVITATION_MUTATION = `
 export const FAMILY_FEED_QUERY = `
   query FamilyFeed($familyId: ID!, $limit: Int, $cursor: String) {
     familyFeed(familyId: $familyId, limit: $limit, cursor: $cursor) {
-      items { id familyId authorPersonId textContent isSystemPost createdAt }
+      items {
+        id familyId authorPersonId authorName textContent isSystemPost createdAt
+        reactionCount commentCount
+      }
       cursor
     }
   }
@@ -57,7 +60,8 @@ export const FAMILY_FEED_QUERY = `
 export const POST_DETAIL_QUERY = `
   query PostDetail($postId: ID!, $familyId: ID!) {
     postDetail(postId: $postId, familyId: $familyId) {
-      id familyId authorPersonId textContent isSystemPost createdAt
+      id familyId authorPersonId authorName textContent isSystemPost createdAt
+      reactionCount commentCount
     }
   }
 `;
@@ -65,7 +69,7 @@ export const POST_DETAIL_QUERY = `
 export const POST_COMMENTS_QUERY = `
   query PostComments($postId: ID!, $limit: Int, $cursor: String) {
     postComments(postId: $postId, limit: $limit, cursor: $cursor) {
-      items { id postId personId textContent createdAt }
+      items { id postId personId personName textContent createdAt }
       cursor
     }
   }
@@ -74,7 +78,7 @@ export const POST_COMMENTS_QUERY = `
 export const POST_REACTIONS_QUERY = `
   query PostReactions($postId: ID!) {
     postReactions(postId: $postId) {
-      postId personId emoji createdAt
+      postId personId personName emoji createdAt
     }
   }
 `;
@@ -120,7 +124,7 @@ export const REMOVE_REACTION_MUTATION = `
 export const FAMILY_EVENTS_QUERY = `
   query FamilyEvents($familyId: ID!, $startDate: String!, $endDate: String!) {
     familyEvents(familyId: $familyId, startDate: $startDate, endDate: $endDate) {
-      id familyId creatorPersonId title description eventType startDate startTime location recurrenceRule createdAt
+      id familyId creatorPersonId creatorName title description eventType startDate startTime location recurrenceRule createdAt
     }
   }
 `;
@@ -128,7 +132,7 @@ export const FAMILY_EVENTS_QUERY = `
 export const EVENT_DETAIL_QUERY = `
   query EventDetail($familyId: ID!, $date: String!, $eventId: ID!) {
     eventDetail(familyId: $familyId, date: $date, eventId: $eventId) {
-      id familyId creatorPersonId title description eventType startDate startTime location recurrenceRule createdAt
+      id familyId creatorPersonId creatorName title description eventType startDate startTime location recurrenceRule createdAt
     }
   }
 `;
@@ -136,6 +140,7 @@ export const EVENT_DETAIL_QUERY = `
 export const EVENT_RSVPS_QUERY = `
   query EventRSVPs($eventId: ID!) {
     eventRSVPs(eventId: $eventId) {
+      personName
       eventId personId status updatedAt
     }
   }

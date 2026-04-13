@@ -17,6 +17,7 @@ interface ApiPost {
   id: string;
   familyId: string;
   authorPersonId: string;
+  authorName: string;
   textContent: string;
   isSystemPost: boolean;
   createdAt: string;
@@ -26,6 +27,7 @@ interface ApiComment {
   id: string;
   postId: string;
   personId: string;
+  personName: string;
   textContent: string;
   createdAt: string;
 }
@@ -86,7 +88,7 @@ export function PostDetailPage() {
         | undefined;
       return (raw?.postComments.items ?? []).map((c) => ({
         id: c.id,
-        authorName: c.personId,
+        authorName: c.personName,
         textContent: c.textContent,
         timeAgo: computeTimeAgo(c.createdAt),
       }));
@@ -119,7 +121,7 @@ export function PostDetailPage() {
   }
 
   const authorName = isApiMode()
-    ? post.authorPersonId
+    ? (post as ApiPost).authorName
     : personName(mockData.persons, post.authorPersonId);
 
   function handleAddComment(e: SyntheticEvent) {
