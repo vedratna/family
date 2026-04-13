@@ -191,7 +191,8 @@ const resolvers = {
     // Auth
     myFamilies: async (_: unknown, __: unknown, ctx: Context) => {
       const userId = await resolveUserId(ctx);
-      return getUserFamilies.execute(userId);
+      const results = await getUserFamilies.execute(userId);
+      return results.map((r) => ({ family: r.family, role: r.membership.role }));
     },
 
     // Family

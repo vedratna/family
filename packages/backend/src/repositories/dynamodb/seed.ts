@@ -36,7 +36,9 @@ const client = new DynamoDBClient({
   credentials: { accessKeyId: "local", secretAccessKey: "local" },
 });
 
-// ── Users ──────────────────────────────────────────────────────────────────────
+// Two app users: Mickey Mouse (user-1) and Bart Simpson (user-2)
+// Mickey owns Disney Family, also joins Simpson Family as admin (multi-family demo)
+// Bart owns Simpson Family
 
 const SEED_USERS: User[] = [
   {
@@ -55,455 +57,373 @@ const SEED_USERS: User[] = [
   },
 ];
 
-// ── Families ───────────────────────────────────────────────────────────────────
-
 const SEED_FAMILIES: Family[] = [
   {
-    id: "fam-sharma-001",
+    id: "family-disney",
     name: "Disney Family",
-    createdBy: "user-priya",
+    createdBy: "user-1",
     themeName: "teal",
     createdAt: "2026-03-01T10:00:00Z",
   },
   {
-    id: "fam-verma-001",
+    id: "family-simpson",
     name: "Simpson Family",
-    createdBy: "user-priya",
+    createdBy: "user-2",
     themeName: "coral",
     createdAt: "2026-03-15T10:00:00Z",
   },
 ];
 
-// ── Persons ────────────────────────────────────────────────────────────────────
-
 const SEED_PERSONS: Person[] = [
+  // Disney Family — Mickey is the app user, others are non-app persons
   {
-    id: "person-grandma",
-    familyId: "fam-sharma-001",
-    userId: "user-grandma",
-    name: "Grandma Mouse",
+    id: "person-mickey",
+    familyId: "family-disney",
+    userId: "user-1",
+    name: "Mickey Mouse",
     createdAt: "2026-03-01T10:00:00Z",
   },
   {
-    id: "person-rajesh",
-    familyId: "fam-sharma-001",
-    userId: "user-rajesh",
-    name: "Mickey Mouse",
+    id: "person-minnie",
+    familyId: "family-disney",
+    name: "Minnie Mouse",
     createdAt: "2026-03-01T10:01:00Z",
   },
   {
-    id: "person-priya",
-    familyId: "fam-sharma-001",
-    userId: "user-priya",
-    name: "Minnie Mouse",
+    id: "person-donald",
+    familyId: "family-disney",
+    name: "Donald Duck",
     createdAt: "2026-03-01T10:02:00Z",
   },
   {
-    id: "person-amit",
-    familyId: "fam-sharma-001",
-    userId: "user-amit",
-    name: "Donald Duck",
-    createdAt: "2026-03-02T10:00:00Z",
-  },
-  {
-    id: "person-sunita",
-    familyId: "fam-sharma-001",
+    id: "person-daisy",
+    familyId: "family-disney",
     name: "Daisy Duck",
     createdAt: "2026-03-01T10:03:00Z",
   },
   {
-    id: "person-priya-v",
-    familyId: "fam-verma-001",
-    userId: "user-priya",
+    id: "person-bart-dis",
+    familyId: "family-disney",
+    userId: "user-2",
+    name: "Bart Simpson",
+    createdAt: "2026-03-02T10:00:00Z",
+  },
+  // Simpson Family — Bart is the app user, plus Mickey joining as admin
+  {
+    id: "person-bart",
+    familyId: "family-simpson",
+    userId: "user-2",
     name: "Bart Simpson",
     createdAt: "2026-03-15T10:00:00Z",
   },
+  {
+    id: "person-mickey-sim",
+    familyId: "family-simpson",
+    userId: "user-1",
+    name: "Mickey Mouse",
+    createdAt: "2026-03-15T10:01:00Z",
+  },
+  {
+    id: "person-homer",
+    familyId: "family-simpson",
+    name: "Homer Simpson",
+    createdAt: "2026-03-15T10:02:00Z",
+  },
+  {
+    id: "person-lisa",
+    familyId: "family-simpson",
+    name: "Lisa Simpson",
+    createdAt: "2026-03-15T10:03:00Z",
+  },
 ];
-
-// ── Memberships ────────────────────────────────────────────────────────────────
 
 const SEED_MEMBERSHIPS: FamilyMembership[] = [
   {
-    familyId: "fam-sharma-001",
-    personId: "person-priya",
-    userId: "user-priya",
+    familyId: "family-disney",
+    personId: "person-mickey",
+    userId: "user-1",
     role: "owner",
     joinedAt: "2026-03-01T10:00:00Z",
   },
   {
-    familyId: "fam-sharma-001",
-    personId: "person-rajesh",
-    userId: "user-rajesh",
-    role: "admin",
-    joinedAt: "2026-03-01T12:00:00Z",
-  },
-  {
-    familyId: "fam-sharma-001",
-    personId: "person-amit",
-    userId: "user-amit",
+    familyId: "family-disney",
+    personId: "person-bart-dis",
+    userId: "user-2",
     role: "editor",
     joinedAt: "2026-03-02T10:00:00Z",
   },
   {
-    familyId: "fam-verma-001",
-    personId: "person-priya-v",
-    userId: "user-priya",
-    role: "editor",
+    familyId: "family-simpson",
+    personId: "person-bart",
+    userId: "user-2",
+    role: "owner",
     joinedAt: "2026-03-15T10:00:00Z",
   },
+  {
+    familyId: "family-simpson",
+    personId: "person-mickey-sim",
+    userId: "user-1",
+    role: "admin",
+    joinedAt: "2026-03-15T10:01:00Z",
+  },
 ];
-
-// ── Relationships ──────────────────────────────────────────────────────────────
 
 const SEED_RELATIONSHIPS: Relationship[] = [
   {
     id: "rel-001",
-    familyId: "fam-sharma-001",
-    personAId: "person-grandma",
-    personBId: "person-rajesh",
-    aToBLabel: "Mother",
-    bToALabel: "Son",
-    type: "parent-child",
+    familyId: "family-disney",
+    personAId: "person-mickey",
+    personBId: "person-minnie",
+    aToBLabel: "Husband",
+    bToALabel: "Wife",
+    type: "spouse",
     status: "confirmed",
     createdAt: "2026-03-01T10:10:00Z",
   },
   {
     id: "rel-002",
-    familyId: "fam-sharma-001",
-    personAId: "person-grandma",
-    personBId: "person-sunita",
-    aToBLabel: "Mother",
-    bToALabel: "Daughter",
-    type: "parent-child",
+    familyId: "family-disney",
+    personAId: "person-donald",
+    personBId: "person-daisy",
+    aToBLabel: "Nephew",
+    bToALabel: "Aunt",
+    type: "custom",
     status: "confirmed",
     createdAt: "2026-03-01T10:11:00Z",
   },
   {
     id: "rel-003",
-    familyId: "fam-sharma-001",
-    personAId: "person-rajesh",
-    personBId: "person-priya",
-    aToBLabel: "Husband",
-    bToALabel: "Wife",
-    type: "spouse",
-    status: "confirmed",
-    createdAt: "2026-03-01T10:12:00Z",
-  },
-  {
-    id: "rel-004",
-    familyId: "fam-sharma-001",
-    personAId: "person-rajesh",
-    personBId: "person-amit",
+    familyId: "family-simpson",
+    personAId: "person-homer",
+    personBId: "person-bart",
     aToBLabel: "Father",
     bToALabel: "Son",
     type: "parent-child",
     status: "confirmed",
-    createdAt: "2026-03-02T10:00:00Z",
+    createdAt: "2026-03-15T10:10:00Z",
+  },
+  {
+    id: "rel-004",
+    familyId: "family-simpson",
+    personAId: "person-homer",
+    personBId: "person-lisa",
+    aToBLabel: "Father",
+    bToALabel: "Daughter",
+    type: "parent-child",
+    status: "confirmed",
+    createdAt: "2026-03-15T10:11:00Z",
   },
   {
     id: "rel-005",
-    familyId: "fam-sharma-001",
-    personAId: "person-grandma",
-    personBId: "person-priya",
-    aToBLabel: "Mother-in-law",
-    bToALabel: "Daughter-in-law",
-    type: "in-law",
-    status: "pending",
-    createdAt: "2026-03-01T10:15:00Z",
+    familyId: "family-simpson",
+    personAId: "person-bart",
+    personBId: "person-lisa",
+    aToBLabel: "Brother",
+    bToALabel: "Sister",
+    type: "sibling",
+    status: "confirmed",
+    createdAt: "2026-03-15T10:12:00Z",
   },
 ];
 
-// ── Posts ───────────────────────────────────────────────────────────────────────
-
 const SEED_POSTS: Post[] = [
   {
-    id: "post-system",
-    familyId: "fam-sharma-001",
+    id: "post-system-disney",
+    familyId: "family-disney",
     authorPersonId: "system",
-    textContent:
-      "Welcome to Disney Family! Minnie created this family space. Invites sent to Mickey and Donald.",
+    textContent: "Welcome to Disney Family! Mickey created this family space.",
     isSystemPost: true,
     createdAt: "2026-03-01T10:00:00Z",
   },
   {
     id: "post-001",
-    familyId: "fam-sharma-001",
-    authorPersonId: "person-priya",
-    textContent:
-      "Donald's first day at school! He was so excited this morning. Growing up so fast.",
+    familyId: "family-disney",
+    authorPersonId: "person-mickey",
+    textContent: "Great day at the park with Minnie and Donald!",
     isSystemPost: false,
     createdAt: "2026-04-05T08:30:00Z",
   },
   {
     id: "post-002",
-    familyId: "fam-sharma-001",
-    authorPersonId: "person-rajesh",
-    textContent: "Family trip to Shimla is ON for May! Start planning everyone.",
+    familyId: "family-disney",
+    authorPersonId: "person-mickey",
+    textContent: "Family movie night on Friday — who's in?",
     isSystemPost: false,
     createdAt: "2026-04-04T19:00:00Z",
   },
   {
     id: "post-003",
-    familyId: "fam-sharma-001",
-    authorPersonId: "person-amit",
-    textContent: "Made a drawing for Grandma today!",
+    familyId: "family-simpson",
+    authorPersonId: "person-bart",
+    textContent: "Aye caramba! First post in the Simpson Family space.",
     isSystemPost: false,
-    createdAt: "2026-04-03T16:00:00Z",
+    createdAt: "2026-04-05T10:00:00Z",
   },
   {
     id: "post-004",
-    familyId: "fam-sharma-001",
-    authorPersonId: "person-grandma",
-    textContent: "Thank you everyone for the lovely birthday wishes yesterday. Love you all.",
+    familyId: "family-simpson",
+    authorPersonId: "person-mickey-sim",
+    textContent: "Thanks for letting me join the Simpson Family!",
     isSystemPost: false,
-    createdAt: "2026-04-02T09:00:00Z",
-  },
-  {
-    id: "post-005",
-    familyId: "fam-sharma-001",
-    authorPersonId: "person-priya",
-    textContent: "Diwali dinner was amazing! So good to have everyone together.",
-    isSystemPost: false,
-    createdAt: "2026-04-01T21:00:00Z",
-  },
-  {
-    id: "post-006",
-    familyId: "fam-sharma-001",
-    authorPersonId: "person-rajesh",
-    textContent: "Weekend gardening with Donald. Teaching him how to grow tomatoes.",
-    isSystemPost: false,
-    createdAt: "2026-03-30T11:00:00Z",
-  },
-  {
-    id: "post-007",
-    familyId: "fam-sharma-001",
-    authorPersonId: "person-priya",
-    textContent: "Sunday brunch recipe that everyone loved. Sharing the secret!",
-    isSystemPost: false,
-    createdAt: "2026-03-29T12:00:00Z",
+    createdAt: "2026-04-06T12:00:00Z",
   },
 ];
-
-// ── Comments ───────────────────────────────────────────────────────────────────
 
 const SEED_COMMENTS: Comment[] = [
   {
     id: "cmt-001",
     postId: "post-001",
-    personId: "person-grandma",
-    textContent: "So proud! He looks so smart.",
+    personId: "person-mickey",
+    textContent: "Such a fun day!",
     createdAt: "2026-04-05T09:00:00Z",
   },
   {
     id: "cmt-002",
-    postId: "post-001",
-    personId: "person-sunita",
-    textContent: "Growing up so fast!",
-    createdAt: "2026-04-05T09:30:00Z",
-  },
-  {
-    id: "cmt-003",
-    postId: "post-001",
-    personId: "person-rajesh",
-    textContent: "My big boy!",
-    createdAt: "2026-04-05T10:00:00Z",
-  },
-  {
-    id: "cmt-004",
     postId: "post-002",
-    personId: "person-priya",
-    textContent: "Can't wait! Let's book the hotel.",
+    personId: "person-mickey",
+    textContent: "Count me in!",
     createdAt: "2026-04-04T20:00:00Z",
   },
   {
-    id: "cmt-005",
-    postId: "post-002",
-    personId: "person-grandma",
-    textContent: "I'll make snacks for the drive!",
-    createdAt: "2026-04-04T21:00:00Z",
+    id: "cmt-003",
+    postId: "post-003",
+    personId: "person-bart",
+    textContent: "More posts coming!",
+    createdAt: "2026-04-05T10:30:00Z",
   },
 ];
-
-// ── Reactions ──────────────────────────────────────────────────────────────────
 
 const SEED_REACTIONS: Reaction[] = [
   {
     postId: "post-001",
-    personId: "person-grandma",
+    personId: "person-mickey",
     emoji: "\u2764\uFE0F",
     createdAt: "2026-04-05T08:45:00Z",
   },
   {
-    postId: "post-001",
-    personId: "person-rajesh",
-    emoji: "\u2764\uFE0F",
-    createdAt: "2026-04-05T08:50:00Z",
-  },
-  {
-    postId: "post-001",
-    personId: "person-sunita",
-    emoji: "\uD83D\uDE0D",
-    createdAt: "2026-04-05T09:00:00Z",
-  },
-  {
     postId: "post-002",
-    personId: "person-priya",
-    emoji: "\uD83D\uDE4F",
+    personId: "person-mickey",
+    emoji: "\uD83D\uDE0D",
     createdAt: "2026-04-04T19:30:00Z",
   },
   {
-    postId: "post-002",
-    personId: "person-amit",
-    emoji: "\uD83D\uDE4F",
-    createdAt: "2026-04-04T20:00:00Z",
-  },
-  {
     postId: "post-003",
-    personId: "person-grandma",
-    emoji: "\u2764\uFE0F",
-    createdAt: "2026-04-03T17:00:00Z",
-  },
-  {
-    postId: "post-004",
-    personId: "person-priya",
-    emoji: "\u2764\uFE0F",
-    createdAt: "2026-04-02T10:00:00Z",
-  },
-  {
-    postId: "post-004",
-    personId: "person-rajesh",
-    emoji: "\u2764\uFE0F",
-    createdAt: "2026-04-02T10:30:00Z",
+    personId: "person-bart",
+    emoji: "\uD83C\uDF89",
+    createdAt: "2026-04-05T10:15:00Z",
   },
 ];
-
-// ── Events ─────────────────────────────────────────────────────────────────────
 
 const SEED_EVENTS: FamilyEvent[] = [
   {
     id: "evt-001",
-    familyId: "fam-sharma-001",
-    creatorPersonId: "person-priya",
-    title: "Grandma's 75th Birthday",
-    eventType: "birthday",
-    startDate: "2026-04-12",
-    startTime: "18:00",
-    location: "Grandma's House",
-    description: "Big celebration! Everyone please bring a dish.",
-    recurrenceRule: "ANNUALLY",
-    createdAt: "2026-03-10T10:00:00Z",
-  },
-  {
-    id: "evt-002",
-    familyId: "fam-sharma-001",
-    creatorPersonId: "person-rajesh",
+    familyId: "family-disney",
+    creatorPersonId: "person-mickey",
     title: "Mickey & Minnie Anniversary",
     eventType: "anniversary",
-    startDate: "2026-03-20",
+    startDate: "2026-05-15",
     startTime: "19:00",
     location: "The Grand Restaurant",
     recurrenceRule: "ANNUALLY",
     createdAt: "2026-03-01T12:00:00Z",
   },
   {
-    id: "evt-003",
-    familyId: "fam-sharma-001",
-    creatorPersonId: "person-priya",
-    title: "Donald's Math Exam",
-    eventType: "exam",
+    id: "evt-002",
+    familyId: "family-disney",
+    creatorPersonId: "person-mickey",
+    title: "Donald's Birthday",
+    eventType: "birthday",
     startDate: "2026-04-20",
-    startTime: "09:00",
-    description: "Final exam. No distractions day before!",
+    startTime: "16:00",
+    location: "Mickey's House",
+    createdAt: "2026-04-01T10:00:00Z",
+  },
+  {
+    id: "evt-003",
+    familyId: "family-simpson",
+    creatorPersonId: "person-bart",
+    title: "Lisa's Saxophone Recital",
+    eventType: "social-function",
+    startDate: "2026-04-25",
+    startTime: "18:00",
+    location: "Springfield Elementary",
     createdAt: "2026-04-01T10:00:00Z",
   },
 ];
 
-// ── RSVPs ──────────────────────────────────────────────────────────────────────
-
 const SEED_RSVPS: EventRSVP[] = [
   {
     eventId: "evt-001",
-    personId: "person-priya",
+    personId: "person-mickey",
     status: "going",
-    updatedAt: "2026-03-10T10:01:00Z",
-  },
-  {
-    eventId: "evt-001",
-    personId: "person-rajesh",
-    status: "going",
-    updatedAt: "2026-03-10T12:00:00Z",
-  },
-  {
-    eventId: "evt-001",
-    personId: "person-amit",
-    status: "going",
-    updatedAt: "2026-03-11T10:00:00Z",
-  },
-  {
-    eventId: "evt-001",
-    personId: "person-sunita",
-    status: "maybe",
-    updatedAt: "2026-03-12T10:00:00Z",
+    updatedAt: "2026-03-10T10:00:00Z",
   },
   {
     eventId: "evt-002",
-    personId: "person-grandma",
+    personId: "person-mickey",
     status: "going",
-    updatedAt: "2026-03-02T10:00:00Z",
+    updatedAt: "2026-04-05T10:00:00Z",
+  },
+  {
+    eventId: "evt-003",
+    personId: "person-bart",
+    status: "going",
+    updatedAt: "2026-04-05T10:00:00Z",
   },
 ];
-
-// ── Chores ─────────────────────────────────────────────────────────────────────
 
 const SEED_CHORES: Chore[] = [
   {
     id: "chore-001",
-    familyId: "fam-sharma-001",
+    familyId: "family-disney",
     title: "Take out trash",
-    assigneePersonId: "person-amit",
-    dueDate: "2026-04-08",
+    assigneePersonId: "person-donald",
+    dueDate: "2026-04-15",
     recurrenceRule: "WEEKLY",
-    rotationMembers: ["person-amit", "person-rajesh", "person-priya"],
     status: "pending",
     createdAt: "2026-03-15T10:00:00Z",
   },
   {
     id: "chore-002",
-    familyId: "fam-sharma-001",
-    title: "Clean garage",
-    description: "Full clean including reorganizing shelves",
-    assigneePersonId: "person-rajesh",
-    dueDate: "2026-04-06",
+    familyId: "family-disney",
+    title: "Water the plants",
+    assigneePersonId: "person-minnie",
+    dueDate: "2026-04-14",
     status: "completed",
-    completedAt: "2026-04-06T15:00:00Z",
+    completedAt: "2026-04-14T15:00:00Z",
     createdAt: "2026-04-01T10:00:00Z",
   },
   {
     id: "chore-003",
-    familyId: "fam-sharma-001",
-    title: "Water the garden",
-    assigneePersonId: "person-amit",
-    dueDate: "2026-04-05",
-    status: "overdue",
-    createdAt: "2026-04-01T10:00:00Z",
+    familyId: "family-simpson",
+    title: "Skateboard practice",
+    assigneePersonId: "person-bart",
+    dueDate: "2026-04-16",
+    status: "pending",
+    createdAt: "2026-04-10T10:00:00Z",
   },
 ];
-
-// ── Notification Preferences ───────────────────────────────────────────────────
 
 const SEED_NOTIFICATION_PREFS: NotificationPreference[] = [
-  { userId: "user-priya", familyId: "fam-sharma-001", category: "events-reminders", enabled: true },
   {
-    userId: "user-priya",
-    familyId: "fam-sharma-001",
-    category: "social-comments-on-own",
+    userId: "user-1",
+    familyId: "family-disney",
+    category: "events-reminders",
     enabled: true,
   },
-  { userId: "user-priya", familyId: "fam-sharma-001", category: "social-feed", enabled: false },
-  { userId: "user-priya", familyId: "fam-sharma-001", category: "family-updates", enabled: false },
+  {
+    userId: "user-1",
+    familyId: "family-disney",
+    category: "social-feed",
+    enabled: true,
+  },
+  {
+    userId: "user-2",
+    familyId: "family-simpson",
+    category: "events-reminders",
+    enabled: true,
+  },
 ];
-
-// ── Table creation ─────────────────────────────────────────────────────────────
 
 async function createTable(): Promise<void> {
   try {
@@ -552,8 +472,6 @@ async function createTable(): Promise<void> {
     throw error;
   }
 }
-
-// ── Seed runner ────────────────────────────────────────────────────────────────
 
 async function seed(): Promise<void> {
   await createTable();

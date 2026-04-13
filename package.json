@@ -8,7 +8,7 @@
     "build": "turbo run build",
     "dev": "./scripts/dev.sh",
     "dev:db": "docker compose up dynamodb-local",
-    "dev:api": "tsx packages/backend/src/local-server/index.ts",
+    "dev:api": "DYNAMODB_ENDPOINT=http://localhost:8000 TABLE_NAME=family-dev tsx packages/backend/src/local-server/index.ts",
     "dev:mobile": "cd packages/mobile && npx expo start",
     "dev:web": "VITE_DATA_MODE=api npm run dev -w @family-app/web",
     "seed": "npm run seed -w @family-app/backend",
