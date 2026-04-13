@@ -8,6 +8,7 @@ const {
   mockGetFamilyChoresExecute,
   mockCreateChoreExecute,
   mockCompleteChoreExecute,
+  mockDeleteChoreExecute,
   mockRotateChoreExecute,
 } = vi.hoisted(() => ({
   mockGetByCognitoSub: vi.fn(),
@@ -16,6 +17,7 @@ const {
   mockGetFamilyChoresExecute: vi.fn(),
   mockCreateChoreExecute: vi.fn(),
   mockCompleteChoreExecute: vi.fn(),
+  mockDeleteChoreExecute: vi.fn(),
   mockRotateChoreExecute: vi.fn(),
 }));
 
@@ -50,6 +52,9 @@ vi.mock("../../../use-cases/chores", () => ({
   })),
   CompleteChore: vi.fn().mockImplementation(() => ({
     execute: mockCompleteChoreExecute,
+  })),
+  DeleteChore: vi.fn().mockImplementation(() => ({
+    execute: mockDeleteChoreExecute,
   })),
   RotateChore: vi.fn().mockImplementation(() => ({
     execute: mockRotateChoreExecute,

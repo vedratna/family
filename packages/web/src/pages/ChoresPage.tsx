@@ -2,15 +2,18 @@ import type { Chore, Person } from "@family-app/shared";
 import { useMemo, useState, type SyntheticEvent } from "react";
 import { useQuery } from "urql";
 
+import { ConfirmModal } from "../components/ConfirmModal";
 import { Loading } from "../components/Loading";
 import { QueryError } from "../components/QueryError";
 import { formatErrorMessage } from "../lib/error-utils";
 import { FAMILY_CHORES_QUERY, FAMILY_MEMBERS_QUERY } from "../lib/graphql-operations";
-import { useCreateChore, useCompleteChore } from "../lib/hooks";
+import { useCreateChore, useCompleteChore, useDeleteChore } from "../lib/hooks";
 import { isApiMode } from "../lib/mode";
 import { toChoreItems, type ChoreItem } from "../lib/transforms";
 import { useFamily } from "../providers/FamilyProvider";
 import { useMockData } from "../providers/MockDataProvider";
+
+type FilterTab = "all" | "pending" | "completed" | "overdue";
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -18,11 +21,19 @@ const STATUS_STYLES: Record<string, string> = {
   overdue: "bg-red-100 text-red-800",
 };
 
+const FILTER_TABS: { label: string; value: FilterTab }[] = [
+  { label: "All", value: "all" },
+  { label: "Pending", value: "pending" },
+  { label: "Completed", value: "completed" },
+  { label: "Overdue", value: "overdue" },
+];
+
 export function ChoresPage() {
   const mockData = useMockData();
   const { activeFamilyId } = useFamily();
   const { createChore, loading: choreLoading } = useCreateChore();
   const { completeChore } = useCompleteChore();
+  const { deleteChore, loading: deleteChoreLoading } = useDeleteChore();
 
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
@@ -30,6 +41,9 @@ export function ChoresPage() {
   const [dueDate, setDueDate] = useState("");
   const [choreError, setChoreError] = useState<string | null>(null);
   const [completeError, setCompleteError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [filterTab, setFilterTab] = useState<FilterTab>("all");
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const [choresResult, reexecuteChores] = useQuery({
     query: FAMILY_CHORES_QUERY,
@@ -66,6 +80,12 @@ export function ChoresPage() {
     }
     return toChoreItems(mockData.chores, mockData.persons, activeFamilyId);
   }, [choresResult.fetching, choresResult.data, persons, mockData, activeFamilyId]);
+
+  const filteredChoreItems = useMemo((): ChoreItem[] | null => {
+    if (choreItems === null) return null;
+    if (filterTab === "all") return choreItems;
+    return choreItems.filter((c) => c.status === filterTab);
+  }, [choreItems, filterTab]);
 
   const familyPersons = useMemo(
     () => persons.filter((p) => p.familyId === activeFamilyId),
@@ -120,6 +140,25 @@ export function ChoresPage() {
     }
   }
 
+  function handleDeleteChore() {
+    if (deleteTarget === null) return;
+    setDeleteError(null);
+    if (isApiMode()) {
+      void deleteChore({ familyId: activeFamilyId, choreId: deleteTarget }).then((result) => {
+        if (result.error) {
+          setDeleteError(formatErrorMessage(result.error));
+          setDeleteTarget(null);
+          return;
+        }
+        setDeleteTarget(null);
+        reexecuteChores({ requestPolicy: "network-only" });
+      });
+    } else {
+      console.log("[mock] deleteChore:", { familyId: activeFamilyId, choreId: deleteTarget });
+      setDeleteTarget(null);
+    }
+  }
+
   if (choresResult.error) {
     return (
       <div className="max-w-2xl mx-auto p-4">
@@ -133,7 +172,7 @@ export function ChoresPage() {
     );
   }
 
-  if (choreItems === null) {
+  if (filteredChoreItems === null) {
     return (
       <div className="max-w-2xl mx-auto p-4">
         <Loading label="Loading chores..." />
@@ -153,6 +192,25 @@ export function ChoresPage() {
         >
           {showForm ? "Cancel" : "New Chore"}
         </button>
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex gap-1 mb-4">
+        {FILTER_TABS.map((tab) => (
+          <button
+            key={tab.value}
+            onClick={() => {
+              setFilterTab(tab.value);
+            }}
+            className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
+              filterTab === tab.value
+                ? "bg-[var(--color-accent-primary)] text-[var(--color-accent-on)]"
+                : "bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {showForm && (
@@ -205,8 +263,9 @@ export function ChoresPage() {
       )}
 
       {completeError !== null && <p className="text-sm text-red-600 mb-3">{completeError}</p>}
+      {deleteError !== null && <p className="text-sm text-red-600 mb-3">{deleteError}</p>}
       <div className="flex flex-col gap-3">
-        {choreItems.map((chore) => (
+        {filteredChoreItems.map((chore) => (
           <div
             key={chore.id}
             className="p-4 bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border-secondary)]"
@@ -236,6 +295,14 @@ export function ChoresPage() {
                     Complete
                   </button>
                 )}
+                <button
+                  onClick={() => {
+                    setDeleteTarget(chore.id);
+                  }}
+                  className="px-2 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                >
+                  Delete
+                </button>
                 <span
                   className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_STYLES[chore.status] ?? ""}`}
                 >
@@ -245,10 +312,22 @@ export function ChoresPage() {
             </div>
           </div>
         ))}
-        {choreItems.length === 0 && (
+        {filteredChoreItems.length === 0 && (
           <p className="text-sm text-[var(--color-text-tertiary)]">No chores assigned.</p>
         )}
       </div>
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Delete Chore"
+        message="Delete this chore? This cannot be undone."
+        confirmLabel="Delete"
+        loading={deleteChoreLoading}
+        onConfirm={handleDeleteChore}
+        onCancel={() => {
+          setDeleteTarget(null);
+        }}
+      />
     </div>
   );
 }

@@ -6,7 +6,13 @@ import { DynamoChoreRepository } from "../../repositories/dynamodb/chore-repo";
 import { DynamoMembershipRepository } from "../../repositories/dynamodb/membership-repo";
 import { DynamoPersonRepository } from "../../repositories/dynamodb/person-repo";
 import { DynamoUserRepository } from "../../repositories/dynamodb/user-repo";
-import { CompleteChore, CreateChore, GetFamilyChores, RotateChore } from "../../use-cases/chores";
+import {
+  CompleteChore,
+  CreateChore,
+  DeleteChore,
+  GetFamilyChores,
+  RotateChore,
+} from "../../use-cases/chores";
 
 const userRepo = new DynamoUserRepository();
 const personRepo = new DynamoPersonRepository();
@@ -16,6 +22,7 @@ const choreRepo = new DynamoChoreRepository();
 const getFamilyChores = new GetFamilyChores(choreRepo);
 const createChore = new CreateChore(choreRepo);
 const completeChore = new CompleteChore(choreRepo);
+const deleteChore = new DeleteChore(choreRepo);
 const rotateChore = new RotateChore(choreRepo);
 
 interface HandlerArgs {
@@ -32,6 +39,8 @@ export async function handler(event: AppSyncResolverEvent<HandlerArgs>): Promise
         return await handleCreateChore(event);
       case "completeChore":
         return await handleCompleteChore(event);
+      case "deleteChore":
+        return await handleDeleteChore(event);
       case "rotateChore":
         return await handleRotateChore(event);
       default:
@@ -108,6 +117,18 @@ async function handleCreateChore(event: AppSyncResolverEvent<HandlerArgs>): Prom
 async function handleCompleteChore(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
   const args = event.arguments;
   await completeChore.execute(args.familyId as string, args.choreId as string);
+  return true;
+}
+
+async function handleDeleteChore(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+  const args = event.arguments;
+  const familyId = args.familyId as string;
+  const role = await resolveRequesterRole(event, familyId);
+  await deleteChore.execute({
+    familyId,
+    choreId: args.choreId as string,
+    requesterRole: role,
+  });
   return true;
 }
 

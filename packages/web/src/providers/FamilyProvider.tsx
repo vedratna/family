@@ -20,6 +20,8 @@ interface FamilyContextValue {
   activeFamilyId: string;
   activeFamily: Family | undefined;
   activeThemeName: ThemeName;
+  activePersonId: string | undefined;
+  activeRole: string | undefined;
   families: Family[];
   memberCount: number;
   loading: boolean;
@@ -31,6 +33,8 @@ const FamilyContext = createContext<FamilyContextValue>({
   activeFamilyId: "",
   activeFamily: undefined,
   activeThemeName: "teal",
+  activePersonId: undefined,
+  activeRole: undefined,
   families: [],
   memberCount: 0,
   loading: false,
@@ -63,23 +67,30 @@ export function FamilyProvider({ children }: FamilyProviderProps) {
   // Mock mode: read from MockDataProvider
   const mockData = useMockData();
 
+  // Raw myFamilies result (with role + personId) used for active membership lookup
+  const rawMyFamilies = useMemo(() => {
+    if (!apiMode) return undefined;
+    const raw = apiResult.data as
+      | {
+          myFamilies: {
+            family: {
+              id: string;
+              name: string;
+              createdBy: string;
+              themeName: string;
+              createdAt: string;
+            };
+            role: string;
+            personId: string;
+          }[];
+        }
+      | undefined;
+    return raw?.myFamilies;
+  }, [apiMode, apiResult.data]);
+
   const families = useMemo<Family[]>(() => {
     if (apiMode) {
-      const raw = apiResult.data as
-        | {
-            myFamilies: {
-              family: {
-                id: string;
-                name: string;
-                createdBy: string;
-                themeName: string;
-                createdAt: string;
-              };
-              role: string;
-            }[];
-          }
-        | undefined;
-      return (raw?.myFamilies ?? []).map((entry) => ({
+      return (rawMyFamilies ?? []).map((entry) => ({
         id: entry.family.id,
         name: entry.family.name,
         createdBy: entry.family.createdBy,
@@ -88,7 +99,7 @@ export function FamilyProvider({ children }: FamilyProviderProps) {
       }));
     }
     return mockData.families;
-  }, [apiMode, apiResult.data, mockData.families]);
+  }, [apiMode, rawMyFamilies, mockData.families]);
 
   const [activeFamilyId, setActiveFamilyId] = useState("");
 
@@ -102,6 +113,17 @@ export function FamilyProvider({ children }: FamilyProviderProps) {
 
   const activeFamily = families.find((f) => f.id === resolvedActiveFamilyId);
   const activeThemeName: ThemeName = activeFamily?.themeName ?? "teal";
+
+  const activeMembership = useMemo(() => {
+    if (apiMode) {
+      return rawMyFamilies?.find((entry) => entry.family.id === resolvedActiveFamilyId);
+    }
+    // Mock mode: derive from mockData.memberships and a known mock currentUser if any
+    return undefined;
+  }, [apiMode, rawMyFamilies, resolvedActiveFamilyId]);
+
+  const activePersonId = activeMembership?.personId;
+  const activeRole = activeMembership?.role;
 
   const memberCount = useMemo(() => {
     if (apiMode) {
@@ -127,6 +149,8 @@ export function FamilyProvider({ children }: FamilyProviderProps) {
         activeFamilyId: resolvedActiveFamilyId,
         activeFamily,
         activeThemeName,
+        activePersonId,
+        activeRole,
         families,
         memberCount,
         loading,

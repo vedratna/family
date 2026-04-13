@@ -115,6 +115,17 @@ CHORE=$(gql 'mutation { createChore(input: { familyId: "family-disney", title: "
 echo "$CHORE" | grep -q "E2E Chore" || fail "Create chore" "$CHORE"
 pass "Created chore in Disney Family"
 
+# Demo user deletes the chore
+CHORE_ID=$(echo "$CHORE" | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"]["createChore"]["id"])')
+DEL=$(gql "mutation { deleteChore(familyId: \"family-disney\", choreId: \"$CHORE_ID\") }" "user-1")
+echo "$DEL" | grep -q '"deleteChore":true' || fail "Delete chore returns true" "$DEL"
+pass "Deleted chore via deleteChore mutation"
+
+# Verify myFamilies returns personId now
+MFP=$(gql '{ myFamilies { family { id } role personId } }' "user-1")
+echo "$MFP" | grep -q '"personId":"person-mickey"' || fail "myFamilies returns personId" "$MFP"
+pass "myFamilies includes activePersonId"
+
 echo ""
 echo "== Invite flow: User A invites phone, User B signs up with that phone, accepts =="
 INVITE_PHONE="+91$(date +%s | tail -c 8)99"

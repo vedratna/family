@@ -66,6 +66,7 @@ type Mutation {
   # Chores
   createChore(input: CreateChoreInput!): Chore!
   completeChore(familyId: ID!, choreId: ID!): Boolean!
+  deleteChore(familyId: ID!, choreId: ID!): Boolean!
   rotateChore(familyId: ID!, choreId: ID!): String!
 
   # Relationships
@@ -124,6 +125,7 @@ type Member {
 type FamilyWithRole {
   family: Family!
   role: String!
+  personId: String!
 }
 
 type Invitation {
