@@ -19,6 +19,8 @@ export async function handler(event: AppSyncResolverEvent<HandlerArgs>): Promise
   try {
     const field = event.info.fieldName;
     switch (field) {
+      case "health":
+        return "OK";
       case "register":
         return await handleRegister(event);
       case "updateProfile":

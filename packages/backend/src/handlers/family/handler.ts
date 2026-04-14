@@ -88,7 +88,10 @@ export async function handler(event: AppSyncResolverEvent<HandlerArgs>): Promise
 
 async function resolveUserId(event: AppSyncResolverEvent<HandlerArgs>): Promise<string> {
   const identity = event.identity as { sub: string } | undefined;
-  const cognitoSub = identity?.sub ?? "";
+  const cognitoSub = identity?.sub;
+  if (cognitoSub === undefined || cognitoSub === "") {
+    throw new Error("UNAUTHENTICATED: Missing Cognito identity");
+  }
   const user = await userRepo.getByCognitoSub(cognitoSub);
   if (user === undefined) {
     throw new Error("USER_NOT_FOUND: No user found for this Cognito identity");
@@ -139,12 +142,16 @@ async function handleFamilyMembers(event: AppSyncResolverEvent<HandlerArgs>): Pr
 
 async function handleCreateFamily(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
   const userId = await resolveUserId(event);
+  const user = await userRepo.getById(userId);
+  if (user === undefined) {
+    throw new Error("USER_NOT_FOUND: No user found for this identity");
+  }
   const args = event.arguments;
   return createFamily.execute({
     name: args.name as string,
     themeName: args.themeName as ThemeName,
     userId,
-    displayName: args.displayName as string,
+    displayName: user.displayName,
   });
 }
 

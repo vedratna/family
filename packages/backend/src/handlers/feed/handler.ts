@@ -160,8 +160,10 @@ async function handlePostComments(
 
   // Look up the post to get familyId for name resolution
   const post = await postRepo.getById(postId);
-  const familyId = post?.familyId ?? "";
-  const enrichedItems = await enrichComments(result.items, familyId, resolver);
+  if (post === undefined) {
+    throw new Error("NOT_FOUND: Post not found");
+  }
+  const enrichedItems = await enrichComments(result.items, post.familyId, resolver);
   return { items: enrichedItems, cursor: result.cursor };
 }
 
@@ -175,8 +177,10 @@ async function handlePostReactions(
 
   // Look up the post to get familyId for name resolution
   const post = await postRepo.getById(postId);
-  const familyId = post?.familyId ?? "";
-  return enrichReactions(reactions, familyId, resolver);
+  if (post === undefined) {
+    throw new Error("NOT_FOUND: Post not found");
+  }
+  return enrichReactions(reactions, post.familyId, resolver);
 }
 
 async function handleCreatePost(
