@@ -212,7 +212,7 @@ export class ApiStack extends cdk.Stack {
 
       const fn = new NodejsFunction(this, `${def.id}-handler`, {
         entry: join(currentDir, `../../backend/src/handlers/${def.domain}/handler.ts`),
-        runtime: lambda.Runtime.NODEJS_20_X,
+        runtime: lambda.Runtime.NODEJS_22_X,
         handler: "handler",
         memorySize: 256,
         timeout: cdk.Duration.seconds(30),
