@@ -116,7 +116,9 @@ async function handleCreateChore(event: AppSyncResolverEvent<HandlerArgs>): Prom
 
 async function handleCompleteChore(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
   const args = event.arguments;
-  await completeChore.execute(args.familyId as string, args.choreId as string);
+  const familyId = args.familyId as string;
+  await resolveRequesterRole(event, familyId);
+  await completeChore.execute(familyId, args.choreId as string);
   return true;
 }
 

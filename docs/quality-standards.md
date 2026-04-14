@@ -1,6 +1,6 @@
 # Quality Standards
 
-> Last reviewed: 2026-04-07
+> Last reviewed: 2026-04-14
 
 This document is the quality constitution for the family-app project. Every rule has a rationale. When in doubt, reference this document.
 
@@ -180,8 +180,8 @@ function check(value: number) {
 
 ```
           ╱╲
-         ╱  ╲         E2E (5%) — Detox
-        ╱ 5% ╲        Critical user flows only
+         ╱  ╲         E2E (5%) — Playwright (web) / Detox (mobile)
+        ╱ 5% ╲        7 critical user flows in Chromium
        ╱──────╲
       ╱        ╲       Integration (20%)
      ╱   20%    ╲      Lambda + DynamoDB Local
@@ -193,10 +193,11 @@ function check(value: number) {
 
 ### Coverage Thresholds
 
-| Scope                  | Minimum    | Enforced |
-| ---------------------- | ---------- | -------- |
-| Overall (all packages) | 80% lines  | CI gate  |
-| `use-cases/` directory | 100% lines | CI gate  |
+| Scope                 | Minimum        | Enforced         |
+| --------------------- | -------------- | ---------------- |
+| Backend (per-package) | 95% branches   | CI gate (vitest) |
+| Web (per-package)     | 95% branches   | CI gate (vitest) |
+| Statements (all)      | 90% statements | CI gate (vitest) |
 
 ### What to Test at Each Level
 
@@ -206,20 +207,27 @@ function check(value: number) {
 - Domain model logic
 - Relationship inference engine (exhaustive cases)
 - Tree building algorithm
-- React hooks (`@testing-library/react-hooks`)
-- Components (React Native Testing Library)
+- React hooks and components (`@testing-library/react`)
+- Web helper modules (error-utils, transforms, permissions, upload)
 
 **Integration tests:**
 
 - Lambda handlers with DynamoDB Local (real DB operations)
 - Permission enforcement across all operations
 
-**E2E tests (Detox):**
+**E2E tests (Playwright — web):**
 
-- Register → create family → invite → locked feed
-- Invitee accepts → mini-tour → post
-- Family switching with theme change
-- Event creation → reminder notification
+- Register → create family → see empty feed
+- Post to feed → comment → react
+- Create event → see on calendar → RSVP
+- Create chore → complete → delete
+- Invite by phone → accept cross-session → see family
+- Add member + relationship → see tree update
+- Upload profile photo (mocked S3) → see avatar
+
+**E2E tests (Detox — mobile, deferred):**
+
+- App launches and renders feed (smoke test scaffold)
 
 ### Prohibited Patterns
 
@@ -249,19 +257,19 @@ function check(value: number) {
 
 ## 7. CI/CD Pipeline Gates
 
-All 7 gates must pass before a PR can be merged. No exceptions.
+All 8 gates must pass before a PR can be merged. No exceptions.
 
 ```
 PR Created
  │
- ├──▶ [1] Lint & Format Check      ─┐
- ├──▶ [2] Type Check                 ├── Run in parallel
- ├──▶ [3] Unit Tests + Coverage     ─┘
- │
- ├──▶ [4] Integration Tests          ← Needs DynamoDB Local (Docker)
- ├──▶ [5] Build Check                ← Backend bundles + Mobile builds
- ├──▶ [6] Bundle Size Check          ← Fail if mobile exceeds threshold
- └──▶ [7] Security Audit             ← npm audit
+ ├──▶ [1] Lint & Format Check       ─┐
+ ├──▶ [2] Type Check                  ├── Run in parallel
+ ├──▶ [3] Unit Tests + Coverage      ─┘
+ │         (95% threshold enforced)
+ ├──▶ [4] Build Check                ← Backend + Web builds
+ ├──▶ [5] Security Audit             ← npm audit
+ ├──▶ [6] E2E Web Tests              ← Playwright + DynamoDB Local (after unit-tests)
+ ├──▶ [7] Bundle Size Check          ← size-limit on web bundle (after build)
  │
  ALL PASS ──▶ PR mergeable
  ANY FAIL ──▶ PR blocked

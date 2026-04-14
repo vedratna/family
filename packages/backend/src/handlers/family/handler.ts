@@ -73,6 +73,8 @@ export async function handler(event: AppSyncResolverEvent<HandlerArgs>): Promise
         return await handleRemoveMember(event);
       case "updateFamilyTheme":
         return await handleUpdateFamilyTheme(event);
+      case "myInvitations":
+        return await handleMyInvitations(event);
       default:
         throw new Error(`Unknown field: ${field}`);
     }
@@ -86,7 +88,10 @@ export async function handler(event: AppSyncResolverEvent<HandlerArgs>): Promise
 
 async function resolveUserId(event: AppSyncResolverEvent<HandlerArgs>): Promise<string> {
   const identity = event.identity as { sub: string } | undefined;
-  const cognitoSub = identity?.sub ?? "";
+  const cognitoSub = identity?.sub;
+  if (cognitoSub === undefined || cognitoSub === "") {
+    throw new Error("UNAUTHENTICATED: Missing Cognito identity");
+  }
   const user = await userRepo.getByCognitoSub(cognitoSub);
   if (user === undefined) {
     throw new Error("USER_NOT_FOUND: No user found for this Cognito identity");
@@ -137,12 +142,16 @@ async function handleFamilyMembers(event: AppSyncResolverEvent<HandlerArgs>): Pr
 
 async function handleCreateFamily(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
   const userId = await resolveUserId(event);
+  const user = await userRepo.getById(userId);
+  if (user === undefined) {
+    throw new Error("USER_NOT_FOUND: No user found for this identity");
+  }
   const args = event.arguments;
   return createFamily.execute({
     name: args.name as string,
     themeName: args.themeName as ThemeName,
     userId,
-    displayName: args.displayName as string,
+    displayName: user.displayName,
   });
 }
 
@@ -238,4 +247,36 @@ async function handleUpdateFamilyTheme(event: AppSyncResolverEvent<HandlerArgs>)
     requesterRole: role,
   });
   return true;
+}
+
+async function handleMyInvitations(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+  const identity = event.identity as { sub: string } | undefined;
+  const cognitoSub = identity?.sub ?? "";
+  const user = await userRepo.getByCognitoSub(cognitoSub);
+  if (user === undefined) {
+    return [];
+  }
+  const invitations = await invitationRepo.getByPhone(user.phone);
+  const pending = invitations.filter((inv) => inv.status === "pending");
+
+  const enriched = await Promise.all(
+    pending.map(async (inv) => {
+      const [family, inviterPerson] = await Promise.all([
+        familyRepo.getById(inv.familyId),
+        personRepo.getById(inv.familyId, inv.invitedBy),
+      ]);
+      return {
+        familyId: inv.familyId,
+        familyName: family?.name ?? "Unknown Family",
+        familyThemeName: family?.themeName ?? "teal",
+        phone: inv.phone,
+        inviterName: inviterPerson?.name ?? "A family member",
+        relationshipToInviter: inv.relationshipToInviter,
+        role: inv.role,
+        status: inv.status,
+        createdAt: inv.createdAt,
+      };
+    }),
+  );
+  return enriched;
 }

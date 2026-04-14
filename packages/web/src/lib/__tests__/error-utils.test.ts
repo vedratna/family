@@ -49,11 +49,47 @@ describe("formatErrorMessage", () => {
     expect(formatErrorMessage(err)).toBe("a thing went wrong");
   });
 
+  it("maps InvalidOtpError", () => {
+    const err = makeError("InvalidOtpError: expired code");
+    expect(formatErrorMessage(err)).toBe("Invalid or expired code.");
+  });
+
+  it("maps INVALID_OTP code prefix", () => {
+    const err = makeError("INVALID_OTP: bad code");
+    expect(formatErrorMessage(err)).toBe("Invalid or expired code.");
+  });
+
+  it("maps NOT_FOUND code prefix", () => {
+    const err = makeError("NOT_FOUND: item gone");
+    expect(formatErrorMessage(err)).toBe("Item not found. It may have been deleted.");
+  });
+
+  it("maps USER_ALREADY_EXISTS code prefix", () => {
+    const err = makeError("USER_ALREADY_EXISTS: phone in use");
+    expect(formatErrorMessage(err)).toBe("An account with this phone number already exists.");
+  });
+
+  it("maps ValidationError and strips class prefix", () => {
+    const err = makeError("ValidationError: Name is required");
+    expect(formatErrorMessage(err)).toBe("Name is required");
+  });
+
+  it("maps VALIDATION_ERROR code prefix", () => {
+    const err = makeError("VALIDATION_ERROR: Email is invalid");
+    expect(formatErrorMessage(err)).toBe("Email is invalid");
+  });
+
   it("strips leading [GraphQL] prefix added by urql", () => {
     const err = makeError("plain message from server");
     // urql's CombinedError prepends "[GraphQL] " to the GraphQLError's message
     expect(err.message).toContain("[GraphQL]");
     const result = formatErrorMessage(err);
     expect(result).toBe("plain message from server");
+  });
+
+  it("strips [Network] prefix", () => {
+    const err = new CombinedError({ networkError: new Error("timeout") });
+    const result = formatErrorMessage(err);
+    expect(result).toBe("timeout");
   });
 });

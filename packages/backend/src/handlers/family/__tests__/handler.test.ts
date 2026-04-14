@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // --- Mock repositories & use cases ---
 const {
   mockGetByCognitoSub,
+  mockGetById_user,
   mockGetByUserId,
   mockGetByFamilyAndPerson,
   mockGetByFamilyId_membership,
@@ -18,6 +19,7 @@ const {
   mockUpdateFamilyThemeExecute,
 } = vi.hoisted(() => ({
   mockGetByCognitoSub: vi.fn(),
+  mockGetById_user: vi.fn(),
   mockGetByUserId: vi.fn(),
   mockGetByFamilyAndPerson: vi.fn(),
   mockGetByFamilyId_membership: vi.fn(),
@@ -36,6 +38,7 @@ const {
 vi.mock("../../../repositories/dynamodb/user-repo", () => ({
   DynamoUserRepository: vi.fn().mockImplementation(() => ({
     getByCognitoSub: mockGetByCognitoSub,
+    getById: mockGetById_user,
   })),
 }));
 
@@ -194,8 +197,9 @@ describe("family handler", () => {
 
   // --- createFamily ---
   describe("createFamily", () => {
-    it("creates a family with resolved userId", async () => {
+    it("creates a family with displayName from user record", async () => {
       mockResolveUserId("u1");
+      mockGetById_user.mockResolvedValue({ id: "u1", displayName: "Alice", phone: "+1234" });
       const created = { id: "f1", name: "Smith" };
       mockCreateFamilyExecute.mockResolvedValue(created);
 
@@ -203,7 +207,6 @@ describe("family handler", () => {
         createEvent("createFamily", {
           name: "Smith",
           themeName: "classic",
-          displayName: "Alice",
         }) as any,
       );
 
@@ -414,35 +417,35 @@ describe("family handler", () => {
   // --- DomainError re-throw ---
   it("wraps DomainError with code prefix", async () => {
     mockResolveUserId("u1");
+    mockGetById_user.mockResolvedValue({ id: "u1", displayName: "D", phone: "+1" });
     const domainErr = new (DomainError as any)("name taken", "FAMILY_DUPLICATE");
     mockCreateFamilyExecute.mockRejectedValue(domainErr);
 
     await expect(
-      handler(createEvent("createFamily", { name: "X", themeName: "t", displayName: "D" }) as any),
+      handler(createEvent("createFamily", { name: "X", themeName: "t" }) as any),
     ).rejects.toThrow("FAMILY_DUPLICATE: name taken");
   });
 
   // --- non-DomainError re-throw ---
   it("re-throws non-DomainError errors as-is", async () => {
     mockResolveUserId("u1");
+    mockGetById_user.mockResolvedValue({ id: "u1", displayName: "D", phone: "+1" });
     mockCreateFamilyExecute.mockRejectedValue(new Error("unexpected"));
 
     await expect(
-      handler(createEvent("createFamily", { name: "X", themeName: "t", displayName: "D" }) as any),
+      handler(createEvent("createFamily", { name: "X", themeName: "t" }) as any),
     ).rejects.toThrow("unexpected");
   });
 
   // --- resolveUserId with missing identity ---
-  it("resolveUserId uses empty string when identity is undefined", async () => {
-    mockGetByCognitoSub.mockResolvedValue(undefined);
-
+  it("rejects with UNAUTHENTICATED when identity is undefined", async () => {
     const event = {
       info: { fieldName: "myFamilies" },
       arguments: {},
       identity: undefined,
     } as unknown;
 
-    await expect(handler(event as any)).rejects.toThrow("USER_NOT_FOUND");
-    expect(mockGetByCognitoSub).toHaveBeenCalledWith("");
+    await expect(handler(event as any)).rejects.toThrow("UNAUTHENTICATED");
+    expect(mockGetByCognitoSub).not.toHaveBeenCalled();
   });
 });

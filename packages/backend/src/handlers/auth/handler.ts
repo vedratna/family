@@ -19,10 +19,14 @@ export async function handler(event: AppSyncResolverEvent<HandlerArgs>): Promise
   try {
     const field = event.info.fieldName;
     switch (field) {
+      case "health":
+        return "OK";
       case "register":
         return await handleRegister(event);
       case "updateProfile":
         return await handleUpdateProfile(event);
+      case "userByPhone":
+        return await handleUserByPhone(event);
       default:
         throw new Error(`Unknown field: ${field}`);
     }
@@ -43,6 +47,16 @@ async function handleRegister(event: AppSyncResolverEvent<HandlerArgs>): Promise
   });
   const profilePhotoUrl = await resolveProfilePhotoUrl(result.user.profilePhotoKey, storageService);
   return { ...result.user, profilePhotoUrl };
+}
+
+async function handleUserByPhone(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {
+  const phone = event.arguments.phone as string;
+  const user = await userRepo.getByPhone(phone);
+  if (user === undefined) {
+    return null;
+  }
+  const profilePhotoUrl = await resolveProfilePhotoUrl(user.profilePhotoKey, storageService);
+  return { ...user, profilePhotoUrl };
 }
 
 async function handleUpdateProfile(event: AppSyncResolverEvent<HandlerArgs>): Promise<unknown> {

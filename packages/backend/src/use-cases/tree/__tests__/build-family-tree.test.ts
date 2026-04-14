@@ -1,7 +1,9 @@
 import type { Person, Relationship } from "@family-app/shared";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
-import { buildTreeFromData } from "../build-family-tree";
+import type { IPersonRepository } from "../../../repositories/interfaces/person-repo";
+import type { IRelationshipRepository } from "../../../repositories/interfaces/relationship-repo";
+import { BuildFamilyTree, buildTreeFromData, serializeTree } from "../build-family-tree";
 
 function makePerson(id: string, name: string, userId?: string): Person {
   const person: Person = { id, familyId: "fam-1", name, createdAt: "2026-01-01T00:00:00Z" };
@@ -176,5 +178,79 @@ describe("buildTreeFromData", () => {
     expect(tree.rootIds).toContain("a");
     expect(tree.rootIds).toContain("b");
     expect(tree.nodes.get("a")?.childIds).toEqual([]);
+  });
+
+  it("ignores relationships referencing unknown persons", () => {
+    const persons = [makePerson("a", "A")];
+    const rels = [makeRel("a", "unknown-person", "parent-child")];
+
+    const tree = buildTreeFromData(persons, rels);
+
+    // Should not crash — the relationship is skipped
+    expect(tree.nodes.get("a")?.childIds).toEqual([]);
+  });
+});
+
+describe("serializeTree", () => {
+  it("serializes a tree to a flat structure", () => {
+    const persons = [makePerson("grandma", "Grandma", "u-grandma"), makePerson("rajesh", "Rajesh")];
+    const rels = [makeRel("grandma", "rajesh", "parent-child")];
+
+    const tree = buildTreeFromData(persons, rels);
+    const serialized = serializeTree(tree);
+
+    expect(serialized.rootIds).toEqual(["grandma"]);
+    expect(serialized.generations).toBe(2);
+    expect(serialized.nodes).toHaveLength(2);
+
+    const grandmaNode = serialized.nodes.find((n) => n.personId === "grandma");
+    expect(grandmaNode?.name).toBe("Grandma");
+    expect(grandmaNode?.hasAppAccount).toBe(true);
+    expect(grandmaNode?.generation).toBe(0);
+    expect(grandmaNode?.childIds).toEqual(["rajesh"]);
+
+    const rajeshNode = serialized.nodes.find((n) => n.personId === "rajesh");
+    expect(rajeshNode?.hasAppAccount).toBe(false);
+  });
+
+  it("includes profilePhotoKey when present", () => {
+    const person = makePerson("a", "Alice", "u1");
+    person.profilePhotoKey = "photos/alice.jpg";
+    const tree = buildTreeFromData([person], []);
+    const serialized = serializeTree(tree);
+
+    expect(serialized.nodes[0]!.profilePhotoKey).toBe("photos/alice.jpg");
+  });
+});
+
+describe("BuildFamilyTree (class)", () => {
+  it("fetches persons and relationships then builds tree", async () => {
+    const personRepo: IPersonRepository = {
+      create: vi.fn(),
+      getById: vi.fn(),
+      getByFamilyId: vi
+        .fn()
+        .mockResolvedValue([makePerson("p1", "Parent"), makePerson("c1", "Child")]),
+      getByUserId: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
+    const relRepo: IRelationshipRepository = {
+      create: vi.fn(),
+      getByFamily: vi.fn().mockResolvedValue([makeRel("p1", "c1", "parent-child")]),
+      getByPerson: vi.fn(),
+      getById: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      getPending: vi.fn(),
+    };
+
+    const uc = new BuildFamilyTree(personRepo, relRepo);
+    const tree = await uc.execute("fam-1");
+
+    expect(tree.rootIds).toEqual(["p1"]);
+    expect(tree.generations).toBe(2);
+    expect(personRepo.getByFamilyId).toHaveBeenCalledWith("fam-1");
+    expect(relRepo.getByFamily).toHaveBeenCalledWith("fam-1");
   });
 });

@@ -57,6 +57,15 @@ describe("FilePicker", () => {
     expect(button).toHaveProperty("disabled", true);
   });
 
+  it("clicking Attach Media triggers file input", () => {
+    render(<FilePicker onSelect={vi.fn()} />);
+    const button = screen.getByText("Attach Media");
+    const input = screen.getByTestId("file-input");
+    const clickSpy = vi.spyOn(input, "click");
+    fireEvent.click(button);
+    expect(clickSpy).toHaveBeenCalled();
+  });
+
   it("accepts multiple files within limit", () => {
     const onSelect = vi.fn();
     render(<FilePicker onSelect={onSelect} maxFiles={3} />);

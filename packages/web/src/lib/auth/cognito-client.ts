@@ -86,7 +86,7 @@ export async function cognitoSignIn(config: CognitoConfig, phone: string): Promi
         resolve(s);
       },
       onFailure: (err) => {
-        reject(err as unknown as Error);
+        reject(err instanceof Error ? err : new Error(String(err)));
       },
     });
   });
