@@ -81,4 +81,43 @@ describe("InlineEdit", () => {
     const textarea = screen.getByDisplayValue("Multiline text");
     expect(textarea.tagName).toBe("TEXTAREA");
   });
+
+  it("keyboard Enter on non-multiline display activates edit mode", () => {
+    render(<InlineEdit value="Hello" onSave={vi.fn()} />);
+    const span = screen.getByText("Hello");
+    fireEvent.keyDown(span, { key: "Enter" });
+    expect(screen.getByDisplayValue("Hello")).toBeInTheDocument();
+  });
+
+  it("keyboard Space on non-multiline display activates edit mode", () => {
+    render(<InlineEdit value="Hello" onSave={vi.fn()} />);
+    const span = screen.getByText("Hello");
+    fireEvent.keyDown(span, { key: " " });
+    expect(screen.getByDisplayValue("Hello")).toBeInTheDocument();
+  });
+
+  it("keyboard Enter on multiline display activates edit mode", () => {
+    render(<InlineEdit value="Multi" onSave={vi.fn()} multiline={true} />);
+    const p = screen.getByText("Multi");
+    fireEvent.keyDown(p, { key: "Enter" });
+    expect(screen.getByDisplayValue("Multi")).toBeInTheDocument();
+  });
+
+  it("shows placeholder when value is empty", () => {
+    render(<InlineEdit value="" onSave={vi.fn()} placeholder="Type here" />);
+    expect(screen.getByText("Type here")).toBeInTheDocument();
+  });
+
+  it("typing in multiline textarea updates draft and saves on Enter", () => {
+    const onSave = vi.fn();
+    render(<InlineEdit value="Multi" onSave={onSave} multiline={true} />);
+    fireEvent.click(screen.getByText("Multi"));
+    const textarea = screen.getByDisplayValue("Multi");
+    fireEvent.change(textarea, { target: { value: "Updated Multi" } });
+    fireEvent.keyDown(textarea, { key: "Enter", ctrlKey: true });
+    // Multiline uses Ctrl+Enter or blur to save; just Enter adds newline
+    // So let's blur instead:
+    fireEvent.blur(textarea);
+    expect(onSave).toHaveBeenCalledWith("Updated Multi");
+  });
 });

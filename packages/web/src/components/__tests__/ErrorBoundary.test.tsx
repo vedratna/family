@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import type React from "react";
 import { describe, it, expect, vi } from "vitest";
 
@@ -26,6 +26,28 @@ describe("ErrorBoundary", () => {
     expect(screen.getByText("Something went wrong")).toBeInTheDocument();
     expect(screen.getByText("Test explosion")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reload" })).toBeInTheDocument();
+
+    spy.mockRestore();
+  });
+
+  it("clicking Reload calls window.location.reload", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const reloadMock = vi.fn();
+    Object.defineProperty(window, "location", {
+      value: Object.assign(Object.create(Object.getPrototypeOf(window.location)), window.location, {
+        reload: reloadMock,
+      }),
+      writable: true,
+    });
+
+    render(
+      <ErrorBoundary>
+        <ThrowingChild message="Boom" />
+      </ErrorBoundary>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Reload" }));
+    expect(reloadMock).toHaveBeenCalled();
 
     spy.mockRestore();
   });

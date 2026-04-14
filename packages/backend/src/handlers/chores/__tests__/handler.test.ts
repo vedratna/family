@@ -233,6 +233,25 @@ describe("chores handler", () => {
     });
   });
 
+  // --- deleteChore ---
+  describe("deleteChore", () => {
+    it("deletes chore with requester role and returns true", async () => {
+      mockResolveRequesterRole("admin" as any);
+      mockDeleteChoreExecute.mockResolvedValue(undefined);
+
+      const result = await handler(
+        createEvent("deleteChore", { familyId: "f1", choreId: "c1" }) as any,
+      );
+
+      expect(mockDeleteChoreExecute).toHaveBeenCalledWith({
+        familyId: "f1",
+        choreId: "c1",
+        requesterRole: "admin",
+      });
+      expect(result).toBe(true);
+    });
+  });
+
   // --- rotateChore ---
   describe("rotateChore", () => {
     it("rotates chore and returns result", async () => {

@@ -3,11 +3,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // --- Mock repositories ---
 const {
   mockGetByCognitoSub,
+  mockGetByPhone,
   mockRegisterExecute,
   mockUpdateProfileExecute,
   mockGenerateDownloadUrl,
 } = vi.hoisted(() => ({
   mockGetByCognitoSub: vi.fn(),
+  mockGetByPhone: vi.fn(),
   mockRegisterExecute: vi.fn(),
   mockUpdateProfileExecute: vi.fn(),
   mockGenerateDownloadUrl: vi.fn(),
@@ -16,6 +18,7 @@ const {
 vi.mock("../../../repositories/dynamodb/user-repo", () => ({
   DynamoUserRepository: vi.fn().mockImplementation(() => ({
     getByCognitoSub: mockGetByCognitoSub,
+    getByPhone: mockGetByPhone,
   })),
 }));
 
@@ -131,6 +134,33 @@ describe("auth handler", () => {
 
       await expect(handler(event as any)).rejects.toThrow("USER_NOT_FOUND");
       expect(mockGetByCognitoSub).toHaveBeenCalledWith("");
+    });
+  });
+
+  // --- userByPhone ---
+  describe("userByPhone", () => {
+    it("returns user with profilePhotoUrl when found", async () => {
+      const user = {
+        id: "u1",
+        phone: "+1234567890",
+        displayName: "Test",
+        profilePhotoKey: "key.jpg",
+      };
+      mockGetByPhone.mockResolvedValue(user);
+      mockGenerateDownloadUrl.mockResolvedValue("https://s3.example.com/key.jpg");
+
+      const result = await handler(createEvent("userByPhone", { phone: "+1234567890" }) as any);
+
+      expect(mockGetByPhone).toHaveBeenCalledWith("+1234567890");
+      expect(result).toEqual({ ...user, profilePhotoUrl: "https://s3.example.com/key.jpg" });
+    });
+
+    it("returns null when user not found", async () => {
+      mockGetByPhone.mockResolvedValue(undefined);
+
+      const result = await handler(createEvent("userByPhone", { phone: "+0000000000" }) as any);
+
+      expect(result).toBeNull();
     });
   });
 

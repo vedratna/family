@@ -44,12 +44,17 @@ interface ResolverMapping {
 const resolverMappings: ResolverMapping[] = [
   // Queries
   { typeName: "Query", fieldName: "health", handlerId: "auth" },
-  { typeName: "Query", fieldName: "myFamilies", handlerId: "auth" },
+  { typeName: "Query", fieldName: "userByPhone", handlerId: "auth" },
+  { typeName: "Query", fieldName: "myFamilies", handlerId: "family" },
+  { typeName: "Query", fieldName: "myInvitations", handlerId: "family" },
   { typeName: "Query", fieldName: "familyMembers", handlerId: "family" },
   { typeName: "Query", fieldName: "familyFeed", handlerId: "feed" },
+  { typeName: "Query", fieldName: "postDetail", handlerId: "feed" },
   { typeName: "Query", fieldName: "postComments", handlerId: "feed" },
+  { typeName: "Query", fieldName: "postReactions", handlerId: "feed" },
   { typeName: "Query", fieldName: "familyEvents", handlerId: "calendar" },
   { typeName: "Query", fieldName: "eventDetail", handlerId: "calendar" },
+  { typeName: "Query", fieldName: "eventRSVPs", handlerId: "calendar" },
   { typeName: "Query", fieldName: "familyChores", handlerId: "chores" },
   {
     typeName: "Query",
@@ -109,6 +114,7 @@ const resolverMappings: ResolverMapping[] = [
   // Mutations — Chores
   { typeName: "Mutation", fieldName: "createChore", handlerId: "chores" },
   { typeName: "Mutation", fieldName: "completeChore", handlerId: "chores" },
+  { typeName: "Mutation", fieldName: "deleteChore", handlerId: "chores" },
   { typeName: "Mutation", fieldName: "rotateChore", handlerId: "chores" },
 
   // Mutations — Relationships
